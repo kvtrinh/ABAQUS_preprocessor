@@ -2022,8 +2022,7 @@ BEAM,675,715
 *Instance, name=beam-1, part=beam
 *End Instance
 *Nset, nset=fixed_nodes, instance=beam-1
-6, 48, 90, 132, 174, 216, 258, 300, 342, 384, 426
-468, 510, 552, 594, 636, 678, 720, 762, 804, 846, 888
+403
 *Nset, nset=moved_nodes, instance=beam-1
 5, 47, 89, 131, 173, 215, 257, 299, 341, 383, 425
 467, 509, 551, 593, 635, 677, 719, 761, 803, 845, 887
@@ -2034,6 +2033,8 @@ BEAM,675,715
 *Elastic
 ** 114 GPA,using Pa
 86.6e9, 0.31
+*Density
+2266
 *Material, name=Joints
 *Elastic
 ** 114 GPA,using Pa
@@ -2044,38 +2045,15 @@ BEAM,675,715
 ** Name: BC-1 Type: Symmetry/Antisymmetry/Encastre
 *Boundary
 fixed_nodes, ENCASTRE
-moved_nodes, 1,2,0.
-moved_nodes, 4,6,0.
+**moved_nodes, 1,2,0.
+**moved_nodes, 4,6,0.
 ** ----------------------------------------------------------------
 ** 
 ** STEP: end_load
 ** 
-*Step, name=end_load, nlgeom=YES
-end load
-**Static, RIKS
-*Static
-.05, 1., 1e-08, .05
-** 
-** LOADS
-** 
-** Name: point_load   Type: enforced displacement
-*Boundary
-**Cload
-moved_nodes, 3,3,-.0002700
-** 
-** OUTPUT REQUESTS
-** 
-*Restart, write, frequency=0
-** 
-** FIELD OUTPUT: F-Output-1
-** 
-*Output, field, variable=PRESELECT
-** 
-** HISTORY OUTPUT: H-Output-1
-** 
-*Output, history, variable=PRESELECT
-** 
-*Node print, nset=moved_nodes
-RF
+*Step, name=frequency
+frequency
+*Frequency
+50
 *End Step
 ** ----------------------------------------------------------------
