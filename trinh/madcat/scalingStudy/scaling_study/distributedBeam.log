@@ -1,0 +1,13 @@
+Abaqus JOB distributedBeam
+Abaqus Student Edition 6.13-2
+Begin Analysis Input File Processor
+8/16/2016 11:42:47 AM
+Run pre.exe
+8/16/2016 11:42:49 AM
+End Analysis Input File Processor
+Begin Abaqus/Standard Analysis
+8/16/2016 11:42:49 AM
+Run standard.exe
+8/16/2016 11:42:50 AM
+End Abaqus/Standard Analysis
+Abaqus JOB distributedBeam COMPLETED
