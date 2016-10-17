@@ -42,6 +42,7 @@ if __name__ == "__main__":
     curRun.setBCs('bcs.inp')
     curRun.setMaterials('materials.inp')
     curRun.setSteps('steps.inp')
+    curRun.addWriteSteps()
 
 #    curRun.setMatlE('STEEL',30.E6)
     curRun.writeInpFile()
