@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Abaqus interface module.
-
+"""
+Abaqus interface module.
 Khanh Trinh & Stefan Schuet
 Intelligent Systems Division
 NASA Ames Research Center
-
 """
 
 import os
 import re
 import shutil
-import numpy
+#import numpy
+#import scipy.sparse
 
-import scipy.sparse
-
+print('Hi Khanh')
 
 class ABAQUS_run:  
     """ 
@@ -72,7 +71,7 @@ class ABAQUS_run:
     def getInpFileName(self):
         #curDir = os.getcwd()
         inpFileName = self.inpFileName+'.inp'
-        print "inpFileName:  %s" % inpFileName
+        print("inpFileName:  %s" % inpFileName)
         return self.inpFileName
 
     def setMatlE(self,matl,E):
@@ -87,7 +86,7 @@ class ABAQUS_run:
             if numLine == replaceEline:
                 values = line.split(',')
                 #print values
-                #print len(values)
+                #print(len(values)
                 replaceEline = -1
                 # values[1] included a '\n'
                 newLine = str(E)+', '+values[1] 
@@ -98,7 +97,7 @@ class ABAQUS_run:
                     replaceEline = numLine + 2
                 newMatlFile.write(line)
         if foundMatl:
-            print 'Found material name %s\n'%matl
+            print('Found material name %s\n'%matl)
             shutil.move(tempFileName, self.materials)
         
 
@@ -113,8 +112,8 @@ class ABAQUS_run:
             numLine = numLine + 1
             if numLine == replaceEline:
                 values = line.split(',')
-                #print values
-                #print len(values)
+                #print(values
+                #print(len(values)
                 replaceEline = -1
                 newLine = values[0]+', '+str(nu) +os.linesep
                 newMatlFile.write(newLine)
@@ -124,7 +123,7 @@ class ABAQUS_run:
                     replaceEline = numLine + 2
                 newMatlFile.write(line)
         if foundMatl:
-            print 'Found material name %s\n'%matl
+            print('Found material name %s\n'%matl)
             shutil.move(tempFileName, self.materials)
 
     def modifySurfacePressure(self, loadFile, surfaceName, pressureValue):
@@ -147,28 +146,28 @@ class ABAQUS_run:
                 modifiedPressure = False
 
             if dsLoadlineSection:
-                print line
+                print(line)
                 if numLine == dsLoadlineNumber:
                     pass
                 else:
                     if "*" in line:
-                        print '* in line'
+                        print('* in line')
                         dsLoadlineSection = False
                         if modifiedPressure == False:
                             extraLine = surfaceName + ', P, ' + str(pressureValue) +os.linesep
                             newLoadFile.write(extraLine)
-                            print '*** printing newline cause surf not found ' + extraLine
+                            print('*** printing newline cause surf not found ' + extraLine)
                             changedFile = True
                             
                     if surfaceName in line:                    
                         newLine = surfaceName + ', P, ' + str(pressureValue) +os.linesep
                         modifiedPressure = True
-                        print 'change line to ' + newLine
+                        print('change line to ' + newLine)
                         changedFile = True
             newLoadFile.write(newLine)
             
         if changedFile:
-            print 'Set pressure on surface %s to %f\n'%(surfaceName, pressureValue)
+            print('Set pressure on surface %s to %f\n'%(surfaceName, pressureValue))
             shutil.move(tempFileName, loadFile)        
 
 
@@ -186,12 +185,12 @@ class ABAQUS_run:
             numLine = numLine + 1
             if numLine == replaceEline:
                 values = line.split(',')
-                print values
-                print len(values)
+                print(values)
+                print(len(values))
                 replaceEline = -1
                 # values[1] included a '\n'
                 newLine = str(Knn)+', '+str(Kss) + ', ' + str(Ktt) + os.linesep
-                print 'change line to ' + newLine
+                print('change line to ' + newLine)
                 newInteractFile.write(newLine)
                 #newInteractFile.write(line)
             else:  
@@ -201,7 +200,7 @@ class ABAQUS_run:
                         replaceEline = numLine + 3
                 newInteractFile.write(line)
         if foundInteract:
-            print 'Found interaction name %s\n'%interaction
+            print('Found interaction name %s\n'%interaction)
             shutil.move(tempFileName, self.interactions)
         
     def setSurfaceInteractionThickness(self,interaction,thickness):
@@ -215,11 +214,11 @@ class ABAQUS_run:
             numLine = numLine + 1
             if numLine == replaceEline:
                 values = line.split(',')
-                print values
-                print len(values)
+                print(values)
+                print(len(values))
                 replaceEline = -1
                 newLine = str(str(thickness) + os.linesep)
-                print 'change line to ' + newLine
+                print('change line to ' + newLine)
                 newInteractFile.write(newLine)
                 #newInteractFile.write(line)
             else:  
@@ -229,23 +228,23 @@ class ABAQUS_run:
                         replaceEline = numLine + 1
                 newInteractFile.write(line)
         if foundInteract:
-            print 'Found interaction name %s\n'%interaction
+            print('Found interaction name %s\n'%interaction)
             shutil.move(tempFileName, self.interactions)
 
     def addSteps(self):
-        print 'add  steps to run input'
+        print('add  steps to run input')
         self.flag_writeSteps = 1
 
     def addStaticStep(self):
-        print 'add static step to run input'
+        print('add static step to run input')
         self.flag_writeStatic = 1
 
     def addWriteStiffnessStep(self):
-        print 'add write stiffness step to run input'
+        print('add write stiffness step to run input')
         self.flag_writeStiffness = 1
 
     def addWriteLoadStep(self):
-        print 'add write load step to run input'
+        print('add write load step to run input')
         self.flag_writeLoad = 1
 
     def clearStepFlags(self):
@@ -255,7 +254,7 @@ class ABAQUS_run:
         self.flag_writeLoad = 0
             
     def writeInpFile(self):
-        print 'write input file %s'% self.inpFileName
+        print('write input file %s'% self.inpFileName)
         fileName = self.inpFileName + '.inp'
         inpFile = open(fileName,'w')
 
@@ -297,7 +296,7 @@ class ABAQUS_run:
         # steps definitions
         numberOfSteps = 0
         if self.flag_writeSteps == 1:
-            print 'write load step file name: %s' %self.steps
+            print('write load step file name: %s' %self.steps)
             if self.steps != None:
                 stepFile = open(self.steps)
                 str = stepFile.read()
@@ -307,7 +306,7 @@ class ABAQUS_run:
                 stepFile.close()
 
         if self.flag_writeStatic== 1:
-            print 'write load step file name: %s' %self.staticStep
+            print('write load step file name: %s' %self.staticStep)
             if self.staticStep != None:
                 stepFile = open(self.staticStep)
                 str = stepFile.read()
@@ -317,7 +316,7 @@ class ABAQUS_run:
                 stepFile.close()
 
         if self.flag_writeStiffness == 1:
-            print 'write load step file name: %s' %self.writeStiffnessStep
+            print('write load step file name: %s' %self.writeStiffnessStep)
             if self.writeStiffnessStep != None:
                 stepFile = open(self.writeStiffnessStep)
                 str = stepFile.read()
@@ -327,7 +326,7 @@ class ABAQUS_run:
                 stepFile.close()
 
         if self.flag_writeLoad == 1:
-            print 'write load step file name: %s' %self.writeLoadStep
+            print('write load step file name: %s' %self.writeLoadStep)
             if self.writeLoadStep != None:
                 stepFile = open(self.writeLoadStep)
                 str = stepFile.read()
@@ -337,7 +336,7 @@ class ABAQUS_run:
                 stepFile.close() 
 
         if numberOfSteps < 1:
-            print 'Error in ABAQUS input file: no step is defined'
+            print('Error in ABAQUS input file: no step is defined')
                 
 
         inpFile.close()
@@ -494,13 +493,9 @@ def read_displacement_vector(filename, ndof, ndof_per_node=3):
         except IndexError:
             continue
         except:
-            print "Unexpected error:", sys.exc_info()[0]
+            print("Unexpected error:", sys.exc_info()[0])
             raise
         
-        #print "node: ", node,
-        #print "u1: ", u1,
-        #print "u2: ", u2,
-        #print "u3: ", u3
            
     fid.close()
 
