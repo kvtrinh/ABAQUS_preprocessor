@@ -3,8 +3,8 @@
 Standalone Test models for Parameter Estimation and UQ.
 """
 
-import numpy
-import scipy.sparse as sprs
+#import numpy
+#import scipy.sparse as sprs
 
 class Model1(object):
     """
