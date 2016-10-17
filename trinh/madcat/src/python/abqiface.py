@@ -239,6 +239,10 @@ class ABAQUS_run:
         print('add static step to run input')
         self.flag_writeStatic = 1
 
+    def addWriteSteps(self):
+        print('add write load step to run input')
+        self.flag_writeSteps = 1        
+
     def addWriteStiffnessStep(self):
         print('add write stiffness step to run input')
         self.flag_writeStiffness = 1
@@ -296,7 +300,7 @@ class ABAQUS_run:
         # steps definitions
         numberOfSteps = 0
         if self.flag_writeSteps == 1:
-            print('write load step file name: %s' %self.steps)
+            print('write step file name: %s' %self.steps)
             if self.steps != None:
                 stepFile = open(self.steps)
                 str = stepFile.read()
