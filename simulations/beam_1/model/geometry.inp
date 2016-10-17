@@ -1,0 +1,14 @@
+*HEADING
+CANTILEVER BEAM
+**
+** This is in inches
+**
+*NODE
+ 1, 0.
+ 6, 100.
+*NGEN, NSET=allnodes
+ 1, 6
+*ELEMENT, TYPE=B31
+ 1, 1, 2
+*ELGEN, ELSET=BEAM
+ 1, 5
