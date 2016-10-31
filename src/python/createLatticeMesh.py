@@ -35,38 +35,3 @@ def createLatticeMesh(numX, numY, numZ, elemType, offX, offY, offZ):
     print('Num shared corners: ', numSharedCorners)         
     return mesh
 
-
-sys.path.append("../../src/python");
-import abqiface
-
-print('createRobotMesh')
-
-
-if __name__ == "__main__":
-    
-    # print the python version
-    print("\n\nUsing python version:")
-    print(sys.version)
-    print(" \n")
-
-    # create lattice
-    mesh = createLatticeMesh(2,2,4,None,0.,0.,0.)
-    print('final mesh geometry: ',len(mesh.nodeList), ' nodes, ',len(mesh.elemList),' elements')
-    geomFile = open('geometry.inp','w')
-    geomFile.write('*HEADING\n')
-    geomFile.write('Robot walking model\n')
-    geomFile.write('*NODE, NSET=allnodes\n')
-    for i in range (len(mesh.nodeList)):
-        nodeId = i+1
-        geomFile.write('%d, %f, %f, %f\n'%(nodeId, mesh.nodeList[i][0],mesh.nodeList[i][1],mesh.nodeList[i][2]))
-
-    geomFile.write('*ELEMENT, TYPE=B31, ELSET=BEAM\n')
-    for i in range (len(mesh.elemList)):
-        geomFile.write('%d, %d, %d\n'%(i+1, mesh.elemList[i][0]+1,mesh.elemList[i][1]+1))
-
-
-        
-    geomFile.close()
-    #mesh.printNodeList()
-    #mesh.printElemList()
-    print('end createRobotMesh')    
