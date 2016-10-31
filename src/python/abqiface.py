@@ -12,7 +12,7 @@ import shutil
 #import numpy
 #import scipy.sparse
 
-print('Hi Khanh')
+print('abqiface.py')
 
 class ABAQUS_mesh:
     """ 
