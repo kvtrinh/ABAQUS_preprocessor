@@ -49,6 +49,7 @@ if __name__ == "__main__":
     print(sys.version)
     print(" \n")
 
+    # create lattice
     mesh = createLatticeMesh(2,2,4,None,0.,0.,0.)
     print('final mesh geometry: ',len(mesh.nodeList), ' nodes, ',len(mesh.elemList),' elements')
     geomFile = open('geometry.inp','w')
@@ -61,7 +62,10 @@ if __name__ == "__main__":
 
     geomFile.write('*ELEMENT, TYPE=B31, ELSET=BEAM\n')
     for i in range (len(mesh.elemList)):
-        geomFile.write('%d, %d, %d\n'%(i+1, mesh.elemList[i][0]+1,mesh.elemList[i][1]+1))    
+        geomFile.write('%d, %d, %d\n'%(i+1, mesh.elemList[i][0]+1,mesh.elemList[i][1]+1))
+
+
+        
     geomFile.close()
     #mesh.printNodeList()
     #mesh.printElemList()
