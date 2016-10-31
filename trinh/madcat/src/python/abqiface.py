@@ -22,12 +22,92 @@ class ABAQUS_mesh:
     def __init__(self):
         self.nodeList = []       # list of x, y, z coords
         self.elemList = []       # list of element input sections
+        self.nsetList = {}       # dictionary: name, member ids
+        self.elsetList = {}      # list dictionary pairs: name, member ids
+
+    def addNode(self, x, y, z):
+        self.nodeList.append([x,y,z])
+
+    def add1Node_Element(self, n1):
+        self.elemList.append([n1])
+
+    def add2Nodes_Element(self, n1, n2):
+        self.elemList.append([n1,n2])
+
+    def add3Nodes_Element(self, n1, n2, n3):
+        self.elemList.append([n1,n2,n3])
+
+    def add4Nodes_Element(self, n1, n2,n3,n4):
+        self.elemList.append([n1,n2,n3,n4])
+
+    def add5Nodes_Element(self, n1, n2, n3, n4, n5):
+        self.elemList.append([ n1, n2, n3, n4, n5])
+        
+    def add6Nodes_Element(self, n1, n2, n3, n4, n5, n6):
+        self.elemList.append([n1, n2, n3, n4, n5, n6])
+        
+    def add7Nodes_Element(self, n1, n2, n3, n4, n5, n6, n7):
+        self.elemList.append([n1, n2, n3, n4, n5, n6, n7])
+        
+    def add8Nodes_Element(self, n1, n2, n3, n4, n5, n6, n7, n8):
+        self.elemList.append([n1, n2, n3, n4, n5, n6, n7, n8])          
+
+    def addNset(self, name, idList):
+        self.nsetList[name]=idList
+
+    def addElset(self, name, idList):
+        self.elsetList[name] = idList
+
+    def writeNset(self, fileHandle, name):
+        fileHandle.write('*NSET, NSET=%s\n'%(name))
+        nPrint = 0
+        nodeList = self.nsetList[name]
+        print nodeList
+        numNodes = len(nodeList)
+        for i in range(numNodes):
+            nPrint = nPrint + 1
+            if i == 0:
+                fileHandle.write('%d'%(nodeList[i]))
+            else:
+                fileHandle.write(', %d'%(nodeList[i]))
+            if nPrint == 8:
+                nPrint = 0
+                fileHandle.write('\n')
 
     def printNodeList(self):
         print('printing nodeList, length: ',len(self.nodeList))
         #print(self.nodeList)
         for i in range(len(self.nodeList)):
             print('%5.3f %5.3f %5.3f'%(self.nodeList[i][0],self.nodeList[i][1],self.nodeList[i][2]))
+
+    def writeNodeLineLastNode(self, fileHandle):
+        nodeId = len(self.nodeList)
+        x = self.nodeList[nodeId-1][0]
+        y = self.nodeList[nodeId-1][1]
+        z = self.nodeList[nodeId-1][2]
+        fileHandle.write('%d, %f, %f, %f\n'%(nodeId, x, y,z))
+
+    def writeNodeLineNodeId(self, fileHandle, nodeId):
+        x = self.nodeList[nodeId-1][0]
+        y = self.nodeList[nodeId-1][1]
+        z = self.nodeList[nodeId-1][2]
+        fileHandle.write('%d, %f, %f, %f\n'%(nodeId, x, y,z))
+
+    def writeElementLineLastElement(self, fileHandle):
+        #print self.elemList
+        curId = len(self.elemList)
+        numNodes = len(self.elemList[curId-1])
+        fileHandle.write('%d'%(curId))
+        for i in range(numNodes):
+            fileHandle.write(', %d'%(self.elemList[curId-1][i]))
+        fileHandle.write('\n')
+
+    def writeElementLineElementId(self, fileHandle, elemId):
+        numNodes = len(self.elemList[elemId-1])
+        fileHandle.write('%d'%(elemId))
+        for i in range(numNodes):
+            fileHandle.write(', %d'%(self.elemList[elemId-1][i]))
+        fileHandle.write('\n')       
 
     def printElemList(self):
         print('printing elemList, length: ',len(self.elemList))
@@ -44,7 +124,7 @@ class ABAQUS_mesh:
                 #print('local node ',i, ' is corner node')
                 try:
                     globalIdIndex = self.nodeList.index(voxel.nodeList[i])
-                    print('index for local node ',i,' is global index ', globalIdIndex)
+                    # print('index for local node ',i,' is global index ', globalIdIndex)
                     sharedNodes = sharedNodes + 1
                 except ValueError:
                     globalIdIndex = len(self.nodeList);
@@ -54,8 +134,8 @@ class ABAQUS_mesh:
             except ValueError:
                 self.nodeList.append(voxel.nodeList[i])
                 local2globalNodeMap.append(len(self.nodeList)-1)
-        print('local2globalNodeMap')
-        print(local2globalNodeMap)
+        # print('local2globalNodeMap')
+        # print(local2globalNodeMap)
         # append elemList
         for i in range(len(voxel.elemList)):
             startNode = local2globalNodeMap[voxel.elemList[i][0]]
