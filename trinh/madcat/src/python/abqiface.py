@@ -58,7 +58,7 @@ class ABAQUS_mesh:
     def addElset(self, name, idList):
         self.elsetList[name] = idList
 
-    def writeNset(self, fileHandle, name):
+    def writeNset(self, fileHandle, name, add_one_to_ID = 0):
         fileHandle.write('*NSET, NSET=%s\n'%(name))
         nPrint = 0
         nodeList = self.nsetList[name]
@@ -66,13 +66,32 @@ class ABAQUS_mesh:
         numNodes = len(nodeList)
         for i in range(numNodes):
             nPrint = nPrint + 1
-            if i == 0:
+            if (nPrint%8) == 1:
                 fileHandle.write('%d'%(nodeList[i]))
             else:
                 fileHandle.write(', %d'%(nodeList[i]))
             if nPrint == 8:
                 nPrint = 0
                 fileHandle.write('\n')
+        fileHandle.write('\n')
+
+    def writeElset(self, fileHandle, name, add_one_to_ID = 0):
+        fileHandle.write('*ELSET, ELSET=%s\n'%(name))
+        nPrint = 0
+        elemList = self.elsetList[name]
+        print elemList
+        numElems = len(elemList)
+        for i in range(numElems):
+            nPrint = nPrint + 1
+            if (nPrint%8) == 1:
+                fileHandle.write('%d'%(elemList[i]+add_one_to_ID))
+            else:
+                fileHandle.write(', %d'%(elemList[i]+add_one_to_ID))
+            if nPrint == 8:
+                nPrint = 0
+                fileHandle.write('\n')
+
+        fileHandle.write('\n')
 
     def printNodeList(self):
         print('printing nodeList, length: ',len(self.nodeList))
@@ -91,7 +110,7 @@ class ABAQUS_mesh:
         x = self.nodeList[nodeId-1][0]
         y = self.nodeList[nodeId-1][1]
         z = self.nodeList[nodeId-1][2]
-        fileHandle.write('%d, %f, %f, %f\n'%(nodeId, x, y,z))
+        fileHandle.write('%d, %f, %f, %f\n'%(nodeId, x, y,z))          
 
     def writeElementLineLastElement(self, fileHandle):
         #print self.elemList
@@ -106,16 +125,55 @@ class ABAQUS_mesh:
         numNodes = len(self.elemList[elemId-1])
         fileHandle.write('%d'%(elemId))
         for i in range(numNodes):
-            fileHandle.write(', %d'%(self.elemList[elemId-1][i]))
+            fileHandle.write(', %d'%(self.elemList[elemId-1][i]))     # elemList stored ABAQUS node ID
         fileHandle.write('\n')       
 
     def printElemList(self):
         print('printing elemList, length: ',len(self.elemList))
         print(self.elemList)
 
+
+
+
+
+    def addVoxelLatticeMesh(self, numX, numY, numZ, elemType, offX, offY, offZ):
+        
+        #mesh = ABAQUS_mesh()
+        pitch = 3.
+        offX = 0.
+        offY = 0.
+        offZ = 0.
+        numBeams = 4
+        numVoxels = 0
+        numSharedCorners = 0
+        for i in range(numX):
+            for j in range(numY):
+                for k in range(numZ):
+                    x = offX + pitch*(i)
+                    y = offY + pitch*(j)
+                    z = offZ + pitch*(k)
+                    numVoxels = numVoxels + 1
+                    print('adding voxel ',numVoxels,x,y,z)
+                    voxel = Voxel_1(pitch, x, y, z, numBeams)
+                    # voxel.printVoxelData()
+                    # add voxel
+                    sharedNodes = self.addVoxel(voxel)
+                    numSharedCorners = numSharedCorners + sharedNodes
+        print('Num shared corners: ', numSharedCorners)         
+
+
+
+
+
+
+
+
+        
+
     def addVoxel(self,voxel):
         # append nodeList
         local2globalNodeMap = []
+        local2globalElementMap = []
         sharedNodes = 0
         for i in range(len(voxel.nodeList)):
             # Don't need to search global list if not corner node
@@ -137,11 +195,22 @@ class ABAQUS_mesh:
         # print('local2globalNodeMap')
         # print(local2globalNodeMap)
         # append elemList
+        self.nodeList.append(voxel.centroid)
+        centroidId = len(self.nodeList) - 1
         for i in range(len(voxel.elemList)):
             startNode = local2globalNodeMap[voxel.elemList[i][0]]
             endNode = local2globalNodeMap[voxel.elemList[i][1]]
-            self.elemList.append([startNode, endNode])
-        return sharedNodes
+            self.elemList.append([startNode, endNode, centroidId])
+            local2globalElementMap.append(len(self.elemList)-1)
+        # append voxelBeamSectionList
+        if not self.elsetList.has_key('voxelSectionList'):
+            self.elsetList['voxelSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
+        for i in range(len(voxel.beamSectionList)):
+            for j in range((len(voxel.beamSectionList[i]))):
+                #self.elsetList['voxelSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[j]])
+                self.elsetList['voxelSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[i][j]])
+        
+        return sharedNodes 
 
 class ABAQUS_run:  
     """ 
@@ -487,18 +556,8 @@ class Voxel_1:
         self.cornerNodeListId = []       # list of x, y, z coords
         self.nodeList = []       # list of x, y, z coords
         self.elemList = []       # list of element input sections
-        self.leg1List = []
-        self.leg2List = []
-        self.leg3List = []
-        self.leg4List = []
-        self.leg5List = []
-        self.leg6List = []
-        self.leg7List = []
-        self.leg8List = []
-        self.leg9List = []
-        self.leg10List = []
-        self.leg11List = []
-        self.leg12List = []
+        self.beamSectionList = [[],[],[],[],[],[],[],[],[],[],[],[]]   # 12 lists for 12 struts
+        self.centroid = [x,y,z]
      
         po2 = pitch/2.
         d45 = po2/numBeams
@@ -508,39 +567,39 @@ class Voxel_1:
         for i in range(numBeams-1):
             self.nodeList.append([x+po2-(i+1)*d45,y,z-(i+1)*d45])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-            self.leg1List.append(len(self.elemList)-1)
+            self.beamSectionList[0].append(len(self.elemList)-1)
         self.nodeList.append([x, y, z-po2])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-        self.leg1List.append(len(self.elemList)-1)
+        self.beamSectionList[0].append(len(self.elemList)-1)
 
         # leg 2
         for i in range(numBeams-1):
             self.nodeList.append([x-(i+1)*d45,y,z-po2+(i+1)*d45])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-            self.leg2List.append(len(self.elemList)-1)
+            self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x-po2, y, z])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-        self.leg2List.append(len(self.elemList)-1)
+        self.beamSectionList[1].append(len(self.elemList)-1)
 
         # leg 3
         for i in range(numBeams-1):
             self.nodeList.append([x-po2+(i+1)*d45,y,z+(i+1)*d45])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-            self.leg3List.append(len(self.elemList)-1)
+            self.beamSectionList[2].append(len(self.elemList)-1)
         self.nodeList.append([x, y, z+po2])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-        self.leg3List.append(len(self.elemList)-1)
+        self.beamSectionList[2].append(len(self.elemList)-1)
 
         # leg 4
         for i in range(numBeams-1):
             self.nodeList.append([x+(i+1)*d45,y,z+po2-(i+1)*d45])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
-            self.leg4List.append(len(self.elemList)-1)
+            self.beamSectionList[3].append(len(self.elemList)-1)
         self.elemList.append([len(self.nodeList)-1,self.cornerNodeListId[0]])
-        self.leg4List.append(len(self.elemList)-1)
+        self.beamSectionList[3].append(len(self.elemList)-1)
 
         # leg 5
         startNode = self.cornerNodeListId[0]
@@ -549,12 +608,12 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x+po2-(i+1)*d45,y+(i+1)*d45,z])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg5List.append(len(self.elemList)-1)
+            self.beamSectionList[4].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.nodeList.append([x, y+po2, z])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([startNode,len(self.nodeList)-1])
-        self.leg5List.append(len(self.elemList)-1)
+        self.beamSectionList[4].append(len(self.elemList)-1)
 
         # leg 6
         startNode = self.cornerNodeListId[1]
@@ -564,10 +623,10 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x,y+(i+1)*d45,z-po2+(i+1)*d45])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg6List.append(len(self.elemList)-1)
+            self.beamSectionList[5].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
-        self.leg6List.append(len(self.elemList)-1)
+        self.beamSectionList[5].append(len(self.elemList)-1)
 
         # leg 7
         startNode = self.cornerNodeListId[2]
@@ -577,10 +636,10 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x-po2+(i+1)*d45,y+(i+1)*d45,z])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg7List.append(len(self.elemList)-1)
+            self.beamSectionList[6].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
-        self.leg7List.append(len(self.elemList)-1)
+        self.beamSectionList[6].append(len(self.elemList)-1)
 
         # leg 8
         startNode = self.cornerNodeListId[3]
@@ -590,10 +649,10 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x,y+(i+1)*d45,z+po2-(i+1)*d45])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg8List.append(len(self.elemList)-1)
+            self.beamSectionList[7].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
-        self.leg8List.append(len(self.elemList)-1)
+        self.beamSectionList[7].append(len(self.elemList)-1)
         
         # leg 9
         startNode = self.cornerNodeListId[0]
@@ -602,12 +661,12 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x+po2-(i+1)*d45,y-(i+1)*d45,z])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg9List.append(len(self.elemList)-1)
+            self.beamSectionList[8].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.nodeList.append([x, y-po2, z])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([startNode,len(self.nodeList)-1])
-        self.leg9List.append(len(self.elemList)-1)
+        self.beamSectionList[8].append(len(self.elemList)-1)
 
         # leg 10
         startNode = self.cornerNodeListId[1]
@@ -617,10 +676,10 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x,y-(i+1)*d45,z-po2+(i+1)*d45])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg10List.append(len(self.elemList)-1)
+            self.beamSectionList[9].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
-        self.leg10List.append(len(self.elemList)-1)
+        self.beamSectionList[9].append(len(self.elemList)-1)
 
         # leg 11
         startNode = self.cornerNodeListId[2]
@@ -630,10 +689,10 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x-po2+(i+1)*d45,y-(i+1)*d45,z])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg11List.append(len(self.elemList)-1)
+            self.beamSectionList[10].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
-        self.leg11List.append(len(self.elemList)-1)
+        self.beamSectionList[10].append(len(self.elemList)-1)
 
         # leg 12
         startNode = self.cornerNodeListId[3]
@@ -643,10 +702,10 @@ class Voxel_1:
                 startNode = len(self.nodeList)-1
             self.nodeList.append([x,y-(i+1)*d45,z+po2-(i+1)*d45])
             self.elemList.append([startNode,len(self.nodeList)-1])
-            self.leg12List.append(len(self.elemList)-1)
+            self.beamSectionList[11].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
-        self.leg12List.append(len(self.elemList)-1)
+        self.beamSectionList[11].append(len(self.elemList)-1)
           
 
     def printVoxelData(self):
