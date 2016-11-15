@@ -88,12 +88,12 @@ if __name__ == "__main__":
     n1_s11 = n1_s5
     n1_s12 = n1_s6
     n1 = [n1_s1,n1_s2,n1_s3,n1_s4,n1_s5,n1_s6,n1_s7,n1_s8,n1_s9,n1_s10,n1_s11,n1_s12]
-    for i in range(len(mesh.elsetList['voxelSectionList'])):
+    for i in range(len(mesh.elsetList['superElementSectionList'])):
         name = 'voxel_strut'+str(i+1)
         n1X = n1[i][0]
         n1Y = n1[i][1]
         n1Z = n1[i][2]
-        mesh.addElset(name,mesh.elsetList['voxelSectionList'][i])  # storing ABAAQUS id
+        mesh.addElset(name,mesh.elsetList['superElementSectionList'][i])  # storing ABAAQUS id
         add_one_to_ID = 1
         mesh.writeElset(geomFile,name,add_one_to_ID) 
         geomFile.write('*BEAM SECTION, SECTION=RECTANGULAR, ELSET=%s, MATERIAL=ultem_2200_polyetherimide_E\n'%(name))

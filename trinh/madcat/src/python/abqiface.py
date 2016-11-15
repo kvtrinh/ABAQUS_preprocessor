@@ -9,6 +9,7 @@ NASA Ames Research Center
 import os
 import re
 import shutil
+import math
 #import numpy
 #import scipy.sparse
 
@@ -220,14 +221,66 @@ class ABAQUS_mesh:
                 #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
             local2globalElementMap.append(len(self.elemList)-1)
         # append voxelBeamSectionList
-        if not self.elsetList.has_key('voxelSectionList'):
-            self.elsetList['voxelSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
+        if not self.elsetList.has_key('superElementSectionList'):
+            self.elsetList['superElementSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
         for i in range(len(voxel.beamSectionList)):
             for j in range((len(voxel.beamSectionList[i]))):
-                #self.elsetList['voxelSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[j]])
-                self.elsetList['voxelSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[i][j]])
+                #self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[j]])
+                self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[i][j]])
+        
+        return sharedNodes
+
+
+    def addSuperElement(self,superElem, includeCentroid=True):
+        # append nodeList
+        local2globalNodeMap = []
+        local2globalElementMap = []
+        sharedNodes = 0
+        for i in range(len(superElem.nodeList)):
+            # Don't need to search global list if not corner node
+            try:
+                cornerIndex = superElem.cornerNodeListId.index(i)
+                #print('local node ',i, ' is corner node')
+                try:
+                    connectionIndex = self.connectionNodeList.index(superElem.nodeList[i])
+                    globalIdIndex = self.connectionNodeMap[connectionIndex]
+                    # print('index for local node ',i,' is global index ', globalIdIndex)
+                    sharedNodes = sharedNodes + 1
+                except ValueError:
+                    globalIdIndex = len(self.nodeList);
+                    self.addConnectionNode(superElem.nodeList[i])
+                local2globalNodeMap.append(globalIdIndex)
+                
+            except ValueError:
+                self.addNode(superElem.nodeList[i])
+                local2globalNodeMap.append(len(self.nodeList)-1)
+        # print('local2globalNodeMap')
+        # print(local2globalNodeMap)
+        # append elemList
+        if includeCentroid:
+            self.addNode(superElem.centroid)
+            centroidId = len(self.nodeList) - 1
+        for i in range(len(superElem.elemList)):
+            startNode = local2globalNodeMap[superElem.elemList[i][0]]
+            endNode = local2globalNodeMap[superElem.elemList[i][1]]
+            if includeCentroid:
+                self.elemList.append([startNode, endNode, centroidId])
+                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode) + ' sect def node ' + str(centroidId))
+            else:
+                self.elemList.append([startNode, endNode])
+                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
+            local2globalElementMap.append(len(self.elemList)-1)
+        # append superElemBeamSectionList
+        if not self.elsetList.has_key('superElemSectionList'):
+            self.elsetList['superElementSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
+        for i in range(len(superElem.beamSectionList)):
+            for j in range((len(superElem.beamSectionList[i]))):
+                self.elsetList['superElemSectionList'][i].append(local2globalElementMap[superElem.beamSectionList[i][j]])
         
         return sharedNodes 
+
+
+    
 
 class ABAQUS_run:  
     """ 
@@ -563,6 +616,98 @@ class ABAQUS_run:
 #
 # End ABAQUS_run
 #
+
+class Kagome_1:
+    """ 
+    Class to hold Kagome_1.  nodeList and elem list index starts at 0 (python list index starts at 0). when writing ABAQUS, both list shift by 1 to start at 1 instead of 0
+    """
+
+    def __init__(self, x, y, z, numBeams,length, theta_degree = 60):
+        self.cornerNodeListId = []       # list of x, y, z coords
+        self.nodeList = []       # list of x, y, z coords
+        self.elemList = []       # list of element input sections
+        self.beamSectionList = [[],[],[],[],[],[]]   # 12 lists for 12 struts
+        self.centroid = [x,y,z]
+        self.pitch = pitch
+        self.numBeamsPerStrut = numBeams
+
+        side = length/2
+        theta = math.radians(theta_degree)
+        sX = side*cos(theta)
+        sY = side*sin(theta)
+        dX = sX/numBeams
+        dY = sY/numBeams
+        centroidNodeId = 0
+        # leg 1
+        self.nodeList.append(self.centroid)    # centroid is not corner node
+        for i in range(numBeams-1):
+            self.nodeList.append([x+(i+1)*dX,y+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.beamSectionList[0].append(len(self.elemList)-1)
+        self.nodeList.append([x+sX, y+sY, 0])
+        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+        self.beamSectionList[0].append(len(self.elemList)-1)
+
+        # leg 2
+        startX = x+sX
+        startY = y+sY
+        for i in range(numBeams-1):
+            self.nodeList.append([startX+(i+1)*dX,startY-(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.nodeList.append([x+side, y, z])
+        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+        self.beamSectionList[1].append(len(self.elemList)-1)
+
+        # leg 3
+        startX = x+side
+        startY = y       
+        for i in range(numBeams-1):
+            self.nodeList.append([x-(i+1)*dX,y,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.beamSectionList[2].append(len(self.elemList)-1)  
+        self.elemList.append([len(self.nodeList)-1,centroidNodeId])
+        self.beamSectionList[2].append(len(self.elemList)-1)
+
+        # leg 4
+        startX = x
+        startY = y
+        for i in range(numBeams-1):
+            self.nodeList.append([startX-(i+1)*dX,startY-(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.nodeList.append([x-sX, y-sY, z])
+        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+        self.beamSectionList[1].append(len(self.elemList)-1)
+
+        # leg 5
+        startX = x-sX
+        startY = y-sY
+        for i in range(numBeams-1):
+            self.nodeList.append([startX-(i+1)*dX,startY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.nodeList.append([x-sX, y, z])
+        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+        self.beamSectionList[1].append(len(self.elemList)-1)
+
+        # leg 6
+        startX = x-side
+        startY = y       
+        for i in range(numBeams-1):
+            self.nodeList.append([x+(i+1)*dX,y,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.beamSectionList[2].append(len(self.elemList)-1)  
+        self.elemList.append([len(self.nodeList)-1,centroidNodeId])
+        self.beamSectionList[2].append(len(self.elemList)-1)
+     
+
+
+    
 
 class Voxel_1:
     """ 
