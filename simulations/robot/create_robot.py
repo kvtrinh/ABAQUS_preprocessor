@@ -282,9 +282,9 @@ if __name__ == "__main__":
     geomFile.write('*DLOAD\n')
     geomFile.write('BEAM,GRAV,99810.,0.,-1.,0.\n')
     geomFile.write('*CONNECTOR MOTION, AMPLITUDE=MIN24, TYPE=DISPLACEMENT\n')
-    geomFile.write('ACTUATOR1,1,.3\n')
+    geomFile.write('ACTUATOR1,1,.2\n')
     geomFile.write('*CONNECTOR MOTION, AMPLITUDE=MIN24, TYPE=DISPLACEMENT\n')
-    geomFile.write('ACTUATOR2,1,.3\n')
+    geomFile.write('ACTUATOR2,1,.2\n')
     geomFile.write('*END STEP\n')
     geomFile.close()
 
