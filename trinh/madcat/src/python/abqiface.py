@@ -31,7 +31,7 @@ class ABAQUS_mesh:
         self.nodeList.append(nodeCoordList)
 
     def addConnectionNode(self,nodeCoordList):
-        self.nodeList.append(nodeCoordList)
+        self.addNode(nodeCoordList)
         self.connectionNodeList.append(nodeCoordList)
         globalNodeId = len(self.nodeList)-1
         self.connectionNodeMap.append(globalNodeId)
@@ -190,17 +190,17 @@ class ABAQUS_mesh:
                     sharedNodes = sharedNodes + 1
                 except ValueError:
                     globalIdIndex = len(self.nodeList);
-                    self.nodeList.append(voxel.nodeList[i])
+                    self.addNode(voxel.nodeList[i])
                 local2globalNodeMap.append(globalIdIndex)
                 
             except ValueError:
-                self.nodeList.append(voxel.nodeList[i])
+                self.addNode(voxel.nodeList[i])
                 local2globalNodeMap.append(len(self.nodeList)-1)
         # print('local2globalNodeMap')
         # print(local2globalNodeMap)
         # append elemList
         if includeCentroid:
-            self.nodeList.append(voxel.centroid)
+            self.addNode(voxel.centroid)
             centroidId = len(self.nodeList) - 1
         for i in range(len(voxel.elemList)):
             startNode = local2globalNodeMap[voxel.elemList[i][0]]
@@ -716,7 +716,6 @@ class Voxel_1:
             startNode = len(self.nodeList)-1
         self.elemList.append([startNode,endNode])
         self.beamSectionList[11].append(len(self.elemList)-1)
-          
 
 
     def printVoxelData(self):
