@@ -21,6 +21,7 @@ class ABAQUS_mesh:
 
     def __init__(self):
         self.nodeList = []       # list of x, y, z coords
+        self.connectionNodeIndexList = []    # index in nodeList that are connection nodes
         self.elemList = []       # list of element input sections
         self.nsetList = {}       # dictionary: name, member ids
         self.elsetList = {}      # list dictionary pairs: name, member ids
@@ -81,17 +82,20 @@ class ABAQUS_mesh:
         elemList = self.elsetList[name]
         print elemList
         numElems = len(elemList)
+        needReturn = True
         for i in range(numElems):
             nPrint = nPrint + 1
             if (nPrint%8) == 1:
                 fileHandle.write('%d'%(elemList[i]+add_one_to_ID))
+                needReturn = True
             else:
                 fileHandle.write(', %d'%(elemList[i]+add_one_to_ID))
             if nPrint == 8:
                 nPrint = 0
                 fileHandle.write('\n')
-
-        fileHandle.write('\n')
+                needReturn = False
+        if needReturn:
+            fileHandle.write('\n')
 
     def printNodeList(self):
         print('printing nodeList, length: ',len(self.nodeList))
