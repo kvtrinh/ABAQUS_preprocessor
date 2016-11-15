@@ -30,8 +30,8 @@ if __name__ == "__main__":
     mesh = ABAQUS_mesh()
     ############## lattice size INPUT ######
     numBeamsPerStrut = 4
-    #mesh.addVoxelLatticeMesh(2,2,4,numBeamsPerStrut,None,0.,0.,0.,True)
-    mesh.addVoxelLatticeMesh(2,2,4,None,0.,0.,0.)
+    mesh.addVoxelLatticeMesh(2,2,4,numBeamsPerStrut,None,0.,0.,0.,True)
+    #mesh.addVoxelLatticeMesh(2,2,4,None,0.,0.,0.)
     print('lattice mesh geometry: ',len(mesh.nodeList), ' nodes, ',len(mesh.elemList),' elements')
     # write lattice nodes and elements
     geomFile.write('*NODE, NSET=lattice_nodes\n')

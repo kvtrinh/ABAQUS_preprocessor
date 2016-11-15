@@ -140,14 +140,14 @@ class ABAQUS_mesh:
 
 
 
-    def addVoxelLatticeMesh(self, numX, numY, numZ, elemType, offX, offY, offZ):
+
+    def addVoxelLatticeMesh(self, numX, numY, numZ, numBeamsPerStrut, elemType, offX, offY, offZ, includeCentroid = True):
         
         #mesh = ABAQUS_mesh()
         pitch = 3.
         offX = 0.
         offY = 0.
         offZ = 0.
-        numBeams = 4
         numVoxels = 0
         numSharedCorners = 0
         for i in range(numX):
@@ -158,14 +158,14 @@ class ABAQUS_mesh:
                     z = offZ + pitch*(k)
                     numVoxels = numVoxels + 1
                     print('adding voxel ',numVoxels,x,y,z)
-                    voxel = Voxel_1(pitch, x, y, z, numBeams)
-                    # voxel.printVoxelData()
+                    voxel = Voxel_1(pitch, x, y, z, numBeamsPerStrut)
+                    voxel.printVoxelData()
                     # add voxel
-                    sharedNodes = self.addVoxel(voxel)
+                    sharedNodes = self.addVoxel(voxel, includeCentroid)
                     numSharedCorners = numSharedCorners + sharedNodes
-        print('Num shared corners: ', numSharedCorners)         
-
-
+                    #print('connection list:')
+                    #print(self.connectionNodeList)                    
+                    print('Num shared corners: ', numSharedCorners)
 
 
 
@@ -174,7 +174,7 @@ class ABAQUS_mesh:
 
         
 
-    def addVoxel(self,voxel):
+    def addVoxel(self,voxel, includeCentroid=True):
         # append nodeList
         local2globalNodeMap = []
         local2globalElementMap = []
@@ -712,6 +712,7 @@ class Voxel_1:
         self.beamSectionList[11].append(len(self.elemList)-1)
           
 
+
     def printVoxelData(self):
         print('cornerNodeListId')
         print(self.cornerNodeListId)
@@ -720,32 +721,33 @@ class Voxel_1:
         print('elemList length ', len(self.elemList))
         print(self.elemList)
         print('leg 1 elem list')
-        print(self.leg1List)
+        print(self.beamSectionList[0])
         print('leg 2 elem list')
-        print(self.leg2List)
+        print(self.beamSectionList[1])
         print('leg 3 elem list')
-        print(self.leg3List)
+        print(self.beamSectionList[2])
         print('leg 4 elem list')
-        print(self.leg4List)
+        print(self.beamSectionList[3])
         print('leg 5 elem list')
-        print(self.leg5List)
+        print(self.beamSectionList[4])
         print('leg 6 elem list')
-        print(self.leg6List)
+        print(self.beamSectionList[5])
         print('leg 7 elem list')
-        print(self.leg7List)
+        print(self.beamSectionList[6])
         print('leg 8 elem list')
-        print(self.leg8List)
+        print(self.beamSectionList[7])
         print('leg 9 elem list')
-        print(self.leg9List)
+        print(self.beamSectionList[8])
         print('leg 10 elem list')
-        print(self.leg10List)
+        print(self.beamSectionList[9])
         print('leg 11 elem list')
-        print(self.leg11List)
+        print(self.beamSectionList[10])
         print('leg 12 elem list')
-        print(self.leg12List)
+        print(self.beamSectionList[11])
         
         for i in range(len(self.nodeList)):
             print('%5.3f %5.3f %5.3f'%(self.nodeList[i][0],self.nodeList[i][1],self.nodeList[i][2]))
+
 
 
 
