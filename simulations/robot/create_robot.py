@@ -7,7 +7,7 @@ NASA Ames Research Center
 """
 
 import sys
-sys.path.append("../../src_old/python");
+sys.path.append("../../src/python");
 from  abqiface import *
 from  createLatticeMesh import *
 
