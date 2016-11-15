@@ -185,12 +185,13 @@ class ABAQUS_mesh:
                 cornerIndex = voxel.cornerNodeListId.index(i)
                 #print('local node ',i, ' is corner node')
                 try:
-                    globalIdIndex = self.nodeList.index(voxel.nodeList[i])
+                    connectionIndex = self.connectionNodeList.index(voxel.nodeList[i])
+                    globalIdIndex = self.connectionNodeMap[connectionIndex]
                     # print('index for local node ',i,' is global index ', globalIdIndex)
                     sharedNodes = sharedNodes + 1
                 except ValueError:
                     globalIdIndex = len(self.nodeList);
-                    self.addNode(voxel.nodeList[i])
+                    self.addConnectionNode(voxel.nodeList[i])
                 local2globalNodeMap.append(globalIdIndex)
                 
             except ValueError:
