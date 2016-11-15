@@ -21,13 +21,20 @@ class ABAQUS_mesh:
 
     def __init__(self):
         self.nodeList = []       # list of x, y, z coords
-        self.connectionNodeIndexList = []    # index in nodeList that are connection nodes
+        self.connectionNodeList = []    # nodeList that are connection nodes
+        self.connectionNodeMap = []    # index of global nodelist (self.nodeList) for each node in self.connectionNodeList
         self.elemList = []       # list of element input sections
         self.nsetList = {}       # dictionary: name, member ids
         self.elsetList = {}      # list dictionary pairs: name, member ids
 
-    def addNode(self, x, y, z):
-        self.nodeList.append([x,y,z])
+    def addNode(self, nodeCoordList):        #nodeCoordList : [x,y,z]
+        self.nodeList.append(nodeCoordList)
+
+    def addConnectionNode(self,nodeCoordList):
+        self.nodeList.append(nodeCoordList)
+        self.connectionNodeList.append(nodeCoordList)
+        globalNodeId = len(self.nodeList)-1
+        self.connectionNodeMap.append(globalNodeId)
 
     def add1Node_Element(self, n1):
         self.elemList.append([n1])
