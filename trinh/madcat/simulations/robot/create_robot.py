@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # set up file
     ############## file name INPUT ######
-    geomFile = open('robot_simulation_2.inp','w')
+    geomFile = open('robot_simulation_4.inp','w')
     geomFile.write('*HEADING\n')
     geomFile.write('Robot walking model\n')
     
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         elemShift = len(mesh.elemList)+1        
         geomFile.write('*NODE, NSET=surface_feet_nodes\n')
         for i in range(len(newNodes)):
-            mesh.addNode(newNodes[i][0],newNodes[i][1],newNodes[i][2])
+            mesh.addNode([newNodes[i][0],newNodes[i][1],newNodes[i][2]])
             mesh.writeNodeLineLastNode(geomFile)
         geomFile.write('*ELEMENT, TYPE=S4R, ELSET=SHELLS\n')
         
@@ -181,23 +181,23 @@ if __name__ == "__main__":
     # reference node for table
     ############## reference node INPUT ######
     table_y = -1.71
-    mesh.addNode(0., table_y, 0.)
+    mesh.addNode([0., table_y, 0.])
     refNodeId = len(mesh.nodeList)
     geomFile.write('*NODE, NSET=ground_ref\n')
     mesh.writeNodeLineLastNode(geomFile)
     ############## table corner nodes INPUT ######
     geomFile.write('*NODE, NSET=RIGID_NODES\n')
     
-    mesh.addNode(-10,table_y,10)
+    mesh.addNode([-10,table_y,10])
     gn1 = len(mesh.nodeList)
     mesh.writeNodeLineLastNode(geomFile)
-    mesh.addNode(10, table_y, 10)
+    mesh.addNode([10, table_y, 10])
     gn2 = len(mesh.nodeList)
     mesh.writeNodeLineLastNode(geomFile)
-    mesh.addNode(10, table_y, -10)
+    mesh.addNode([10, table_y, -10])
     gn3 = len(mesh.nodeList)
     mesh.writeNodeLineLastNode(geomFile)
-    mesh.addNode(-10, table_y, -10)
+    mesh.addNode([-10, table_y, -10])
     gn4 = len(mesh.nodeList)
     mesh.writeNodeLineLastNode(geomFile)
     mesh.add1Node_Element(refNodeId)
@@ -253,7 +253,20 @@ if __name__ == "__main__":
     geomFile.write('15.,-1.,16., 0.,17.,1.0,18.,0.\n')
     geomFile.write('19.,-1.,20., 0.,21.,1.0,22.,0.\n')
     geomFile.write('23.,-1.,24., 0.,25.,1.0,26.,0.\n')     
-    geomFile.write('27.,-1.,28., 0.,29.,1.0,30.,0.\n')         
+    geomFile.write('27.,-1.,28., 0.,29.,1.0,30.,0.\n')
+
+    geomFile.write('31.,-1.,32., 0.,33.,1.0,34.,0.\n')
+    geomFile.write('35.,-1.,36., 0.,37.,1.0,38.,0.\n')
+    geomFile.write('39.,-1.,40., 0.,41.,1.0,42.,0.\n')
+    geomFile.write('43.,-1.,44., 0.,45.,1.0,46.,0.\n')     
+    geomFile.write('47.,-1.,48., 0.,49.,1.0,50.,0.\n')
+    geomFile.write('51.,-1.,52., 0.,53.,1.0,54.,0.\n')
+    geomFile.write('55.,-1.,56., 0.,57.,1.0,58.,0.\n')
+    geomFile.write('59.,-1.,60., 0.,61.,1.0,62.,0.\n')
+
+
+
+    
     matlLib = Material_Library()
     matlLib.writeAbaqusMatlLines('ultem_2200_polyetherimide_E', geomFile)
     matlLib.writeAbaqusMatlLines('Aluminum_E', geomFile)
@@ -265,13 +278,13 @@ if __name__ == "__main__":
 ##    geomFile.write('**\n')
     geomFile.write('*STEP,INC=40000,NLGEOM\n')
     geomFile.write('*DYNAMIC\n')
-    geomFile.write('1.0E-4,30.,1.0E-8,.01\n')    # full run
+    geomFile.write('1.0E-4,60.,1.0E-8,.05\n')    # full run
     geomFile.write('*DLOAD\n')
     geomFile.write('BEAM,GRAV,99810.,0.,-1.,0.\n')
     geomFile.write('*CONNECTOR MOTION, AMPLITUDE=MIN24, TYPE=DISPLACEMENT\n')
-    geomFile.write('ACTUATOR1,1,.2\n')
+    geomFile.write('ACTUATOR1,1,.3\n')
     geomFile.write('*CONNECTOR MOTION, AMPLITUDE=MIN24, TYPE=DISPLACEMENT\n')
-    geomFile.write('ACTUATOR2,1,.2\n')
+    geomFile.write('ACTUATOR2,1,.3\n')
     geomFile.write('*END STEP\n')
     geomFile.close()
 
