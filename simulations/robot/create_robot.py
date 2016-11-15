@@ -42,7 +42,7 @@ if __name__ == "__main__":
         nsetList.append(nodeId)  # nodeId is ABAQUS id
         mesh.addNset('lattice_nodes', nsetList)
     mesh.addNset('FEET_NODES',[366, 407, 75, 448, 117, 489, 159, 33])
-    mesh.writeNset(geomFile,'FEET_NODES')        
+    mesh.writeNset(geomFile,'FEET_NODES',0)        
     
     geomFile.write('*ELEMENT, TYPE=B31, ELSET=BEAM\n')
     beamList = []
@@ -74,12 +74,12 @@ if __name__ == "__main__":
     n1_s11 = n1_s5
     n1_s12 = n1_s6
     n1 = [n1_s1,n1_s2,n1_s3,n1_s4,n1_s5,n1_s6,n1_s7,n1_s8,n1_s9,n1_s10,n1_s11,n1_s12]
-    for i in range(len(mesh.elsetList['voxelSectionList'])):
+    for i in range(len(mesh.elsetList['superElementSectionList'])):
         name = 'voxel_strut'+str(i+1)
         n1X = n1[i][0]
         n1Y = n1[i][1]
         n1Z = n1[i][2]
-        mesh.addElset(name,mesh.elsetList['voxelSectionList'][i])  # storing ABAAQUS id
+        mesh.addElset(name,mesh.elsetList['superElementSectionList'][i])  # storing ABAAQUS id
         add_one_to_ID = 1
         mesh.writeElset(geomFile,name,add_one_to_ID) 
         geomFile.write('*BEAM SECTION, SECTION=RECTANGULAR, ELSET=%s, MATERIAL=ultem_2200_polyetherimide_E\n'%(name))
@@ -146,8 +146,8 @@ if __name__ == "__main__":
     geomFile.write(' .2\n')
     mesh.addElset('negZfrictionElems',negZfrictionElemList)
     mesh.addElset('posZfrictionElems',posZfrictionElemList)
-    mesh.writeElset(geomFile, 'negZfrictionElems')
-    mesh.writeElset(geomFile, 'posZfrictionElems')
+    mesh.writeElset(geomFile, 'negZfrictionElems',0)
+    mesh.writeElset(geomFile, 'posZfrictionElems',0)
 
     
     # actuators and springs (springs are for visual only)
