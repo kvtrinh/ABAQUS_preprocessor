@@ -66,7 +66,7 @@ class ABAQUS_mesh:
     def addElset(self, name, idList):
         self.elsetList[name] = idList
 
-    def writeNset(self, fileHandle, name, add_one_to_ID = 0):
+    def writeNset(self, fileHandle, name, add_to_ID = 1):
         fileHandle.write('*NSET, NSET=%s\n'%(name))
         nPrint = 0
         nodeList = self.nsetList[name]
@@ -75,15 +75,15 @@ class ABAQUS_mesh:
         for i in range(numNodes):
             nPrint = nPrint + 1
             if (nPrint%8) == 1:
-                fileHandle.write('%d'%(nodeList[i]))
+                fileHandle.write('%d'%(nodeList[i]+add_to_ID))
             else:
-                fileHandle.write(', %d'%(nodeList[i]))
+                fileHandle.write(', %d'%(nodeList[i]+add_to_ID))
             if nPrint == 8:
                 nPrint = 0
                 fileHandle.write('\n')
         fileHandle.write('\n')
 
-    def writeElset(self, fileHandle, name, add_one_to_ID = 0):
+    def writeElset(self, fileHandle, name, add_to_ID = 1):
         fileHandle.write('*ELSET, ELSET=%s\n'%(name))
         nPrint = 0
         elemList = self.elsetList[name]
@@ -93,16 +93,25 @@ class ABAQUS_mesh:
         for i in range(numElems):
             nPrint = nPrint + 1
             if (nPrint%8) == 1:
-                fileHandle.write('%d'%(elemList[i]+add_one_to_ID))
+                fileHandle.write('%d'%(elemList[i]+add_to_ID))
                 needReturn = True
             else:
-                fileHandle.write(', %d'%(elemList[i]+add_one_to_ID))
+                fileHandle.write(', %d'%(elemList[i]+add_to_ID))
             if nPrint == 8:
                 nPrint = 0
                 fileHandle.write('\n')
                 needReturn = False
         if needReturn:
             fileHandle.write('\n')
+
+    def findNodes_coord_locations(self, coord, coordValue, tol=0.001):
+        nodesFound = []
+        for i in range(len(self.connectionNodeList)):
+            node = self.connectionNodeList[i]
+            if abs(node[coord]-coordValue) <= tol:
+                nodeId = self.connectionNodeMap[i]
+                nodesFound.append(nodeId)
+        return nodesFound
 
     def printNodeList(self):
         print('printing nodeList, length: ',len(self.nodeList))
@@ -152,9 +161,6 @@ class ABAQUS_mesh:
         
         #mesh = ABAQUS_mesh()
         pitch = 3.
-        offX = 0.
-        offY = 0.
-        offZ = 0.
         numVoxels = 0
         numSharedCorners = 0
         for i in range(numX):
@@ -166,7 +172,7 @@ class ABAQUS_mesh:
                     numVoxels = numVoxels + 1
                     print('adding voxel ',numVoxels,x,y,z)
                     voxel = Voxel_1(pitch, x, y, z, numBeamsPerStrut)
-                    voxel.printVoxelData()
+                    #voxel.printVoxelData()
                     # add voxel
                     sharedNodes = self.addVoxel(voxel, includeCentroid)
                     numSharedCorners = numSharedCorners + sharedNodes

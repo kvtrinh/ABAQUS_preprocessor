@@ -25,16 +25,29 @@ if __name__ == "__main__":
     geomFile = open('fracture_specimen_3d_1.inp','w')
     geomFile.write('*HEADING\n')
     geomFile.write('3D fracture specimen\n')
+
+    # mesh inputs
+    pitch = 3.
+    panel1X = 10
+    panel1Y = 4
+    panel1Z = 2
+    panel2X = 3
+    panel2Y = 1
+    panel2Z = panel1Z
+    d2X = (panel1X-panel2X)*pitch
+    d2Y = panel1Y*pitch
+    d3Y = (panel1Y+panel2Y)*pitch
+    
+    numBeamsPerStrut = 1
     
     # create and write lattice mesh
     mesh = ABAQUS_mesh()
     ############## lattice size INPUT ######
-    numBeamsPerStrut = 2
-    mesh.addVoxelLatticeMesh(3,2,1,numBeamsPerStrut,None,0.,0.,0.,True)
+    mesh.addVoxelLatticeMesh(panel1X,panel1Y,panel1Z,numBeamsPerStrut,None,0.,0.,0.,True)
     print('Adding 1st block (3x2x1), lattice mesh geometry: ',len(mesh.nodeList), ' nodes, ',len(mesh.elemList),' elements')
-    mesh.addVoxelLatticeMesh(1,1,1,numBeamsPerStrut,None,0.,6.,0.,True)
+    mesh.addVoxelLatticeMesh(panel2X,panel2Y,panel2Z,numBeamsPerStrut,None,d2X,d2Y,0.,True)
     print('Adding 2nd block (1x1x1), lattice mesh geometry: ',len(mesh.nodeList), ' nodes, ',len(mesh.elemList),' elements')
-    mesh.addVoxelLatticeMesh(3,2,1,numBeamsPerStrut,None,0.,9.,0.,True)
+    mesh.addVoxelLatticeMesh(panel1X,panel1Y,panel1Z,numBeamsPerStrut,None,0.,d3Y,0.,True)
     print('Adding 3rd block (3x2x1), lattice mesh geometry: ',len(mesh.nodeList), ' nodes, ',len(mesh.elemList),' elements')   
     # write lattice nodes and elements
     geomFile.write('*NODE, NSET=lattice_nodes\n')
@@ -87,20 +100,33 @@ if __name__ == "__main__":
         geomFile.write(' .072, .072\n')
         geomFile.write(' %f, %f, %f\n'%(n1X, n1Y, n1Z))
         
-    
+    # materials definitions
     matlLib = Material_Library()
     matlLib.writeAbaqusMatlLines('ultem_2200_polyetherimide_E', geomFile)
     matlLib.writeAbaqusMatlLines('Aluminum_E', geomFile)
-##    geomFile.write('*MATERIAL, NAME=Matl_1\n')
-##    geomFile.write('*ELASTIC\n')
-##    geomFile.write(' 3.E6,.3\n')
-##    geomFile.write('*DENSITY\n')
-##    geomFile.write(' .0005\n')
-##    geomFile.write('**\n')
+
+    # BC definitions
+    baseNodes = mesh.findNodes_coord_locations(1,-1.5)
+    baseNodesName = 'baseNodes'
+    mesh.addNset(baseNodesName,baseNodes)
+    mesh.writeNset(geomFile, baseNodesName)
+    geomFile.write('*BOUNDARY\n')
+    geomFile.write(baseNodesName +',1,6,0.\n')
+    movedNodes = mesh.findNodes_coord_locations(1,25.5)
+    movedNodesName = 'movedNodes'
+    mesh.addNset(movedNodesName,movedNodes)
+    mesh.writeNset(geomFile, movedNodesName)    
+
     geomFile.write('*STEP\n')
     geomFile.write('*FREQUENCY\n')
     geomFile.write('12\n')    # full run
     geomFile.write('*END STEP\n')
+    geomFile.write('*STEP,INC=40000,NLGEOM\n')
+    geomFile.write('*STATIC\n')
+    geomFile.write('.1,1.,.001\n')    # full run
+    geomFile.write('*BOUNDARY\n')
+    geomFile.write(movedNodesName +',2,2,0.8\n')    
+    geomFile.write('*END STEP\n')    
     geomFile.close()
 
     #mesh.printNodeList()
