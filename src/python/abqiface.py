@@ -745,6 +745,49 @@ class Voxel_1:
 
 
 
+class Material_Library:
+    """
+    Class to hold materials for ABAQUS modeling.
+    """
+    def __init__(self):
+        self.matlList = {}      # material dictionary
+        # ultem_2200_polyetherimide_E   # E for English units
+        name = 'ultem_2200_polyetherimide_E'
+        line1 = '*MATERIAL, NAME=' + name + '\n'
+        line2 = '*ELASTIC\n'
+        line3 = '986000., 0.38\n'      # psi
+        line4 = '*DENSITY\n'
+        line5 = ' .0001329\n'          # 0.0513 lb/in3,   assuming lbm... converting to lbf*s2/in = .
+        line6 = '**End of ' + name + ' material definitions\n'
+        self.matlList[name] = [line1, line2, line3, line4, line5, line6]
+        # Aluminum_E
+        name = 'Aluminum_E'
+        line1 = '*MATERIAL, NAME=' + name + '\n'
+        line2 = '*ELASTIC\n'
+        line3 = '10.e6, 0.3\n'      # psi
+        line4 = '*DENSITY\n'
+        line5 = ' .000253\n'          # 
+        line6 = '**End of ' + name + ' material definitions\n'
+        self.matlList[name] = [line1, line2, line3, line4, line5, line6]
+        # Steel_E
+        name = 'Steel_E'
+        line1 = '*MATERIAL, NAME=' + name + '\n'
+        line2 = '*ELASTIC\n'
+        line3 = '28.e6, 0.3\n'      # psi
+        line4 = '*DENSITY\n'
+        line5 = ' .000749\n'          # 
+        line6 = '**End of ' + name + ' material definitions\n'
+        self.matlList[name] = [line1, line2, line3, line4, line5, line6]
+
+        
+    def writeAbaqusMatlLines(self, name, fileHandle):
+        lines = self.matlList[name]
+        for line in lines:
+            fileHandle.write(line)
+        
+    
+        
+
         
 
 def writeLoadVector(fileName, unitLoadFileName, p1, p2, p3):
