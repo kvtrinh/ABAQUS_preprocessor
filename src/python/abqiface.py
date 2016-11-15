@@ -167,13 +167,6 @@ class ABAQUS_mesh:
                     #print(self.connectionNodeList)                    
                     print('Num shared corners: ', numSharedCorners)
 
-
-
-
-
-
-        
-
     def addVoxel(self,voxel, includeCentroid=True):
         # append nodeList
         local2globalNodeMap = []
@@ -199,12 +192,18 @@ class ABAQUS_mesh:
         # print('local2globalNodeMap')
         # print(local2globalNodeMap)
         # append elemList
-        self.nodeList.append(voxel.centroid)
-        centroidId = len(self.nodeList) - 1
+        if includeCentroid:
+            self.nodeList.append(voxel.centroid)
+            centroidId = len(self.nodeList) - 1
         for i in range(len(voxel.elemList)):
             startNode = local2globalNodeMap[voxel.elemList[i][0]]
             endNode = local2globalNodeMap[voxel.elemList[i][1]]
-            self.elemList.append([startNode, endNode, centroidId])
+            if includeCentroid:
+                self.elemList.append([startNode, endNode, centroidId])
+                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode) + ' sect def node ' + str(centroidId))
+            else:
+                self.elemList.append([startNode, endNode])
+                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
             local2globalElementMap.append(len(self.elemList)-1)
         # append voxelBeamSectionList
         if not self.elsetList.has_key('voxelSectionList'):
