@@ -264,7 +264,11 @@ class ABAQUS_mesh:
             try:
                 cornerIndex = superElem.cornerNodeListId.index(i)
                 #print('local node ',i, ' is corner node')
+
+
+                
                 try:
+                    # search to see if local corner node is a global corner node
                     connectionIndex = self.connectionNodeList.index(superElem.nodeList[i])
                     globalIdIndex = self.connectionNodeMap[connectionIndex]
                     # print('index for local node ',i,' is global index ', globalIdIndex)
@@ -272,6 +276,9 @@ class ABAQUS_mesh:
                 except ValueError:
                     globalIdIndex = len(self.nodeList);
                     self.addConnectionNode(superElem.nodeList[i])
+
+
+                    
                 local2globalNodeMap.append(globalIdIndex)
                 
             except ValueError:
