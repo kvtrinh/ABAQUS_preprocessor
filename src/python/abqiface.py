@@ -204,68 +204,20 @@ class ABAQUS_mesh:
                     #print(self.connectionNodeList)                    
                     print('Num shared corners: ', numSharedCorners)
 
-##    def addVoxel(self,voxel, includeCentroid=True):
-##        # append nodeList
-##        local2globalNodeMap = []
-##        local2globalElementMap = []
-##        sharedNodes = 0
-##        for i in range(len(voxel.nodeList)):
-##            # Don't need to search global list if not corner node
-##            try:
-##                cornerIndex = voxel.cornerNodeListId.index(i)
-##                #print('local node ',i, ' is corner node')
-##                try:
-##                    connectionIndex = self.connectionNodeList.index(voxel.nodeList[i])
-##                    globalIdIndex = self.connectionNodeMap[connectionIndex]
-##                    # print('index for local node ',i,' is global index ', globalIdIndex)
-##                    sharedNodes = sharedNodes + 1
-##                except ValueError:
-##                    globalIdIndex = len(self.nodeList);
-##                    self.addConnectionNode(voxel.nodeList[i])
-##                local2globalNodeMap.append(globalIdIndex)
-##                
-##            except ValueError:
-##                self.addNode(voxel.nodeList[i])
-##                local2globalNodeMap.append(len(self.nodeList)-1)
-##        # print('local2globalNodeMap')
-##        # print(local2globalNodeMap)
-##        # append elemList
-##        if includeCentroid:
-##            self.addNode(voxel.centroid)
-##            centroidId = len(self.nodeList) - 1
-##        for i in range(len(voxel.elemList)):
-##            startNode = local2globalNodeMap[voxel.elemList[i][0]]
-##            endNode = local2globalNodeMap[voxel.elemList[i][1]]
-##            if includeCentroid:
-##                self.elemList.append([startNode, endNode, centroidId])
-##                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode) + ' sect def node ' + str(centroidId))
-##            else:
-##                self.elemList.append([startNode, endNode])
-##                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
-##            local2globalElementMap.append(len(self.elemList)-1)
-##        # append voxelBeamSectionList
-##        if not self.elsetList.has_key('superElementSectionList'):
-##            self.elsetList['superElementSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
-##        for i in range(len(voxel.beamSectionList)):
-##            for j in range((len(voxel.beamSectionList[i]))):
-##                #self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[j]])
-##                self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[i][j]])
-##        
-##        return sharedNodes
-
 
     def addSuperElement(self,superElem, includeCentroid=True):
         # append nodeList
         local2globalNodeMap = []
         local2globalElementMap = []
         sharedNodes = 0
+        nodeTolerance = 0.0001
         for i in range(len(superElem.nodeList)):
             # Don't need to search global list if not corner node
             try:
                 cornerIndex = superElem.cornerNodeListId.index(i)
                 #print('local node ',i, ' is corner node')
 
-                globalConnectionNodeId = searchNodeList(superElem.nodeList[i], self.connectionNodeList)
+                globalConnectionNodeId = searchNodeList(superElem.nodeList[i], self.connectionNodeList,nodeTolerance)
                 if globalConnectionNodeId == -1:
                     # local corner node is not in global connection list
                     globalIdIndex = len(self.nodeList);
@@ -274,19 +226,6 @@ class ABAQUS_mesh:
                     globalIdIndex = self.connectionNodeMap[globalConnectionNodeId]
                     # print('index for local node ',i,' is global index ', globalIdIndex)
                     sharedNodes = sharedNodes + 1                    
-
-
-                
-##                try:
-##                    # search to see if local corner node is a global corner node
-##                    connectionIndex = self.connectionNodeList.index(superElem.nodeList[i])
-##                    globalIdIndex = self.connectionNodeMap[connectionIndex]
-##                    # print('index for local node ',i,' is global index ', globalIdIndex)
-##                    sharedNodes = sharedNodes + 1
-##                except ValueError:
-##                    globalIdIndex = len(self.nodeList);
-##                    self.addConnectionNode(superElem.nodeList[i])
-
 
                     
                 local2globalNodeMap.append(globalIdIndex)
@@ -991,12 +930,15 @@ class Material_Library:
         for line in lines:
             fileHandle.write(line)
         
-def searchNodeList(node, searchList):
+def searchNodeList(node, searchList, tol):
     # search to see if local corner node is a global corner node
-    try:
-        index = searchList.index(node)
-    except ValueError:
-        index = -1   
+    index = -1
+    for n in searchList:
+        r = math.sqrt((node[0]-n[0])**2+(node[1]-n[1])**2+(node[2]-n[2])**2)
+        if r <= tol:
+            index = searchList.index(n)
+            break
+      
     return index
         
 
