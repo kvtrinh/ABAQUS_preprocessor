@@ -155,7 +155,7 @@ class ABAQUS_mesh:
 
 
 
-    def addKagome1LatticeMesh(self, numX, numY, numBeamsPerStrut, cX, cY, cZ, length, theta_d, inclusionBox = None):
+    def addKagome1LatticeMesh(self, numX, numY, numBeamsPerStrut, cX, cY, cZ, length, theta_d, inclusionBox = None, noMergeBox = None):
         # numX and numY grows in the positive x and y direction respectively
         numVoxels = 0
         numSharedCorners = 0
@@ -176,7 +176,7 @@ class ABAQUS_mesh:
                         #print('adding kagome element ',numVoxels,x,y,z)
                         kagome = Kagome_1(x, y, z, numBeamsPerStrut,length, theta_d)
                         includeCentroid = False
-                        sharedNodes = self.addSuperElement(kagome, includeCentroid)
+                        sharedNodes = self.addSuperElement(kagome, includeCentroid, noMergeBox)
                         numSharedCorners = numSharedCorners + sharedNodes
                         #print('connection list:')
                         #print(self.connectionNodeList)                    
@@ -210,7 +210,7 @@ class ABAQUS_mesh:
                     print('Num shared corners: ', numSharedCorners)
 
 
-    def addSuperElement(self,superElem, includeCentroid=True):
+    def addSuperElement(self,superElem, includeCentroid=True, noMergeBox = None):
         # append nodeList
         local2globalNodeMap = []
         local2globalElementMap = []
@@ -222,7 +222,7 @@ class ABAQUS_mesh:
                 cornerIndex = superElem.cornerNodeListId.index(i)
                 #print('local node ',i, ' is corner node')
 
-                globalConnectionNodeId = searchNodeList(superElem.nodeList[i], self.connectionNodeList,nodeTolerance)
+                globalConnectionNodeId = searchNodeList(superElem.nodeList[i], self.connectionNodeList,nodeTolerance, noMergeBox)
                 if globalConnectionNodeId == -1:
                     # local corner node is not in global connection list
                     globalIdIndex = len(self.nodeList);
