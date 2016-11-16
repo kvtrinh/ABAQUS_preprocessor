@@ -88,7 +88,7 @@ class ABAQUS_mesh:
         fileHandle.write('*ELSET, ELSET=%s\n'%(name))
         nPrint = 0
         elemList = self.elsetList[name]
-        print elemList
+        #print elemList
         numElems = len(elemList)
         needReturn = True
         for i in range(numElems):
@@ -155,7 +155,7 @@ class ABAQUS_mesh:
 
 
 
-    def addKagome1LatticeMesh(self, numX, numY, numBeamsPerStrut, cX, cY, cZ, length, theta_d):
+    def addKagome1LatticeMesh(self, numX, numY, numBeamsPerStrut, cX, cY, cZ, length, theta_d, inclusionBox = None):
         # numX and numY grows in the positive x and y direction respectively
         numVoxels = 0
         numSharedCorners = 0
@@ -166,20 +166,25 @@ class ABAQUS_mesh:
                 if noNumZ:
                     x = cX + length*(i)+  length*math.cos(theta)*(j)
                     y = cY + length*math.sin(theta)*(j)
-                    z = cZ 
-                    numVoxels = numVoxels + 1
-                    print('adding voxel ',numVoxels,x,y,z)
-                    kagome = Kagome_1(x, y, z, numBeamsPerStrut,length, theta_d)
-                    includeCentroid = False
-                    sharedNodes = self.addSuperElement(kagome, includeCentroid)
-                    numSharedCorners = numSharedCorners + sharedNodes
-                    #print('connection list:')
-                    #print(self.connectionNodeList)                    
-                    print('Num shared corners: ', numSharedCorners)
+                    z = cZ
+                    inside = isNodeInBox([x,y,z], inclusionBox)
+                    inSide = True
+                    if inclusionBox != None:
+                        inSide = isNodeInBox([x,y,z], inclusionBox)
+                    if inSide:
+                        numVoxels = numVoxels + 1
+                        #print('adding kagome element ',numVoxels,x,y,z)
+                        kagome = Kagome_1(x, y, z, numBeamsPerStrut,length, theta_d)
+                        includeCentroid = False
+                        sharedNodes = self.addSuperElement(kagome, includeCentroid)
+                        numSharedCorners = numSharedCorners + sharedNodes
+                        #print('connection list:')
+                        #print(self.connectionNodeList)                    
+                        #print('Num shared corners: ', numSharedCorners)
+        print('end addKagome1LatticeMesh')
 
 
-
-    def addVoxelLatticeMesh(self, numX, numY, numZ, numBeamsPerStrut, elemType, offX, offY, offZ, includeCentroid = True):
+    def addVoxelLatticeMesh(self, numX, numY, numZ, numBeamsPerStrut, elemType, offX, offY, offZ, includeCentroid = True, inclusionBox = None):
         
         #mesh = ABAQUS_mesh()
         pitch = 3.
@@ -192,7 +197,7 @@ class ABAQUS_mesh:
                     y = offY + pitch*(j)
                     z = offZ + pitch*(k)
                     numVoxels = numVoxels + 1
-                    print('adding voxel ',numVoxels,x,y,z)
+                    #print('adding voxel ',numVoxels,x,y,z)
                     voxel = Voxel_1(pitch, x, y, z, numBeamsPerStrut)
                     #voxel.printVoxelData()
                     # add voxel
@@ -210,7 +215,7 @@ class ABAQUS_mesh:
         local2globalNodeMap = []
         local2globalElementMap = []
         sharedNodes = 0
-        nodeTolerance = 0.0001
+        nodeTolerance = 0.000001
         for i in range(len(superElem.nodeList)):
             # Don't need to search global list if not corner node
             try:
@@ -656,13 +661,15 @@ class Kagome_1:
         # leg 4
         startX = x
         startY = y
+        startNodeId = centroidNodeId
         for i in range(numBeams-1):
             self.nodeList.append([startX-(i+1)*dX,startY-(i+1)*dY,z])
-            self.elemList.append([centroidNodeId,len(self.nodeList)-1])
+            self.elemList.append([startNodeId,len(self.nodeList)-1])
+            startNodeId = len(self.nodeList)-1
             self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x-sX, y-sY, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
-        self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+        self.cornerNodeListId.append(len(self.nodeList)-1)
+        self.elemList.append([startNodeId,len(self.nodeList)-1])
         self.beamSectionList[1].append(len(self.elemList)-1)
 
         # leg 5
@@ -930,16 +937,44 @@ class Material_Library:
         for line in lines:
             fileHandle.write(line)
         
-def searchNodeList(node, searchList, tol):
-    # search to see if local corner node is a global corner node
+def searchNodeList(node, searchList, tol, exclusionBox = None):
+    # search to see if local corner node is a global corner node, skip check if node is inside exclusion box
     index = -1
     for n in searchList:
+        if exclusionBox != None:
+            nInExclusionBox = isNodeInBox(n,exclusionBox)
+            if nInExclusionBox:
+                continue
         r = math.sqrt((node[0]-n[0])**2+(node[1]-n[1])**2+(node[2]-n[2])**2)
         if r <= tol:
             index = searchList.index(n)
             break
       
     return index
+
+def isNodeInBox(node, box):
+    # search to see if the node ([x,y,z] is in the box ([min corner X, min corner Y, min corner Z],[max corner X, max corner Y, max corner Z])
+    inside = True
+    if node[0] < box[0][0]:
+        inside = False
+        return
+    if node[1] < box[0][1]:
+        inside = False
+        return
+    if node[2] < box[0][2]:
+        inside = False
+        return
+    if node[0] > box[1][0]:
+        inside = False
+        return
+    if node[1] > box[1][1]:
+        inside = False
+        return
+    if node[2] > box[1][2]:
+        inside = False
+        return    
+    return inside
+    
         
 
 def writeLoadVector(fileName, unitLoadFileName, p1, p2, p3):
