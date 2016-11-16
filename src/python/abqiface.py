@@ -196,60 +196,62 @@ class ABAQUS_mesh:
                     voxel = Voxel_1(pitch, x, y, z, numBeamsPerStrut)
                     #voxel.printVoxelData()
                     # add voxel
-                    sharedNodes = self.addVoxel(voxel, includeCentroid)
+                    #sharedNodes = self.addVoxel(voxel, includeCentroid)
+                    sharedNodes = self.addSuperElement(voxel, includeCentroid)
+                    
                     numSharedCorners = numSharedCorners + sharedNodes
                     #print('connection list:')
                     #print(self.connectionNodeList)                    
                     print('Num shared corners: ', numSharedCorners)
 
-    def addVoxel(self,voxel, includeCentroid=True):
-        # append nodeList
-        local2globalNodeMap = []
-        local2globalElementMap = []
-        sharedNodes = 0
-        for i in range(len(voxel.nodeList)):
-            # Don't need to search global list if not corner node
-            try:
-                cornerIndex = voxel.cornerNodeListId.index(i)
-                #print('local node ',i, ' is corner node')
-                try:
-                    connectionIndex = self.connectionNodeList.index(voxel.nodeList[i])
-                    globalIdIndex = self.connectionNodeMap[connectionIndex]
-                    # print('index for local node ',i,' is global index ', globalIdIndex)
-                    sharedNodes = sharedNodes + 1
-                except ValueError:
-                    globalIdIndex = len(self.nodeList);
-                    self.addConnectionNode(voxel.nodeList[i])
-                local2globalNodeMap.append(globalIdIndex)
-                
-            except ValueError:
-                self.addNode(voxel.nodeList[i])
-                local2globalNodeMap.append(len(self.nodeList)-1)
-        # print('local2globalNodeMap')
-        # print(local2globalNodeMap)
-        # append elemList
-        if includeCentroid:
-            self.addNode(voxel.centroid)
-            centroidId = len(self.nodeList) - 1
-        for i in range(len(voxel.elemList)):
-            startNode = local2globalNodeMap[voxel.elemList[i][0]]
-            endNode = local2globalNodeMap[voxel.elemList[i][1]]
-            if includeCentroid:
-                self.elemList.append([startNode, endNode, centroidId])
-                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode) + ' sect def node ' + str(centroidId))
-            else:
-                self.elemList.append([startNode, endNode])
-                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
-            local2globalElementMap.append(len(self.elemList)-1)
-        # append voxelBeamSectionList
-        if not self.elsetList.has_key('superElementSectionList'):
-            self.elsetList['superElementSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
-        for i in range(len(voxel.beamSectionList)):
-            for j in range((len(voxel.beamSectionList[i]))):
-                #self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[j]])
-                self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[i][j]])
-        
-        return sharedNodes
+##    def addVoxel(self,voxel, includeCentroid=True):
+##        # append nodeList
+##        local2globalNodeMap = []
+##        local2globalElementMap = []
+##        sharedNodes = 0
+##        for i in range(len(voxel.nodeList)):
+##            # Don't need to search global list if not corner node
+##            try:
+##                cornerIndex = voxel.cornerNodeListId.index(i)
+##                #print('local node ',i, ' is corner node')
+##                try:
+##                    connectionIndex = self.connectionNodeList.index(voxel.nodeList[i])
+##                    globalIdIndex = self.connectionNodeMap[connectionIndex]
+##                    # print('index for local node ',i,' is global index ', globalIdIndex)
+##                    sharedNodes = sharedNodes + 1
+##                except ValueError:
+##                    globalIdIndex = len(self.nodeList);
+##                    self.addConnectionNode(voxel.nodeList[i])
+##                local2globalNodeMap.append(globalIdIndex)
+##                
+##            except ValueError:
+##                self.addNode(voxel.nodeList[i])
+##                local2globalNodeMap.append(len(self.nodeList)-1)
+##        # print('local2globalNodeMap')
+##        # print(local2globalNodeMap)
+##        # append elemList
+##        if includeCentroid:
+##            self.addNode(voxel.centroid)
+##            centroidId = len(self.nodeList) - 1
+##        for i in range(len(voxel.elemList)):
+##            startNode = local2globalNodeMap[voxel.elemList[i][0]]
+##            endNode = local2globalNodeMap[voxel.elemList[i][1]]
+##            if includeCentroid:
+##                self.elemList.append([startNode, endNode, centroidId])
+##                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode) + ' sect def node ' + str(centroidId))
+##            else:
+##                self.elemList.append([startNode, endNode])
+##                #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
+##            local2globalElementMap.append(len(self.elemList)-1)
+##        # append voxelBeamSectionList
+##        if not self.elsetList.has_key('superElementSectionList'):
+##            self.elsetList['superElementSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
+##        for i in range(len(voxel.beamSectionList)):
+##            for j in range((len(voxel.beamSectionList[i]))):
+##                #self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[j]])
+##                self.elsetList['superElementSectionList'][i].append(local2globalElementMap[voxel.beamSectionList[i][j]])
+##        
+##        return sharedNodes
 
 
     def addSuperElement(self,superElem, includeCentroid=True):
