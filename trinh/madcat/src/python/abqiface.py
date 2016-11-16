@@ -155,6 +155,27 @@ class ABAQUS_mesh:
 
 
 
+    def addKagome1LatticeMesh(self, numX, numY, numBeamsPerStrut, cX, cY, cZ, length, theta_d):
+        # numX and numY grows in the positive x and y direction respectively
+        numVoxels = 0
+        numSharedCorners = 0
+        noNumZ = True
+        theta = math.radians(theta_d)
+        for i in range(numX):
+            for j in range(numY):
+                if noNumZ:
+                    x = cX + length*(i)+  length*math.cos(theta)*(j)
+                    y = cY + length*math.sin(theta)*(j)
+                    z = cZ 
+                    numVoxels = numVoxels + 1
+                    print('adding voxel ',numVoxels,x,y,z)
+                    kagome = Kagome_1(x, y, z, numBeamsPerStrut,length, theta_d)
+                    includeCentroid = False
+                    sharedNodes = self.addSuperElement(kagome, includeCentroid)
+                    numSharedCorners = numSharedCorners + sharedNodes
+                    #print('connection list:')
+                    #print(self.connectionNodeList)                    
+                    print('Num shared corners: ', numSharedCorners)
 
 
 
@@ -271,11 +292,13 @@ class ABAQUS_mesh:
                 #print('adding element with start node' + str(startNode) + ' and end node ' + str(endNode))
             local2globalElementMap.append(len(self.elemList)-1)
         # append superElemBeamSectionList
-        if not self.elsetList.has_key('superElemSectionList'):
-            self.elsetList['superElementSectionList']=[[],[],[],[],[],[],[],[],[],[],[],[]]
+        if not self.elsetList.has_key('superElementSectionList'):
+            self.elsetList['superElementSectionList'] = []
+            for item in superElem.beamSectionList:
+                self.elsetList['superElementSectionList'].append([])
         for i in range(len(superElem.beamSectionList)):
             for j in range((len(superElem.beamSectionList[i]))):
-                self.elsetList['superElemSectionList'][i].append(local2globalElementMap[superElem.beamSectionList[i][j]])
+                self.elsetList['superElementSectionList'][i].append(local2globalElementMap[superElem.beamSectionList[i][j]])
         
         return sharedNodes 
 
@@ -628,15 +651,16 @@ class Kagome_1:
         self.elemList = []       # list of element input sections
         self.beamSectionList = [[],[],[],[],[],[]]   # 12 lists for 12 struts
         self.centroid = [x,y,z]
-        self.pitch = pitch
+        self.pitch = length
         self.numBeamsPerStrut = numBeams
 
         side = length/2
         theta = math.radians(theta_degree)
-        sX = side*cos(theta)
-        sY = side*sin(theta)
+        sX = side*math.cos(theta)
+        sY = side*math.sin(theta)
         dX = sX/numBeams
         dY = sY/numBeams
+        sideOnum = side/numBeams
         centroidNodeId = 0
         # leg 1
         self.nodeList.append(self.centroid)    # centroid is not corner node
@@ -665,7 +689,7 @@ class Kagome_1:
         startX = x+side
         startY = y       
         for i in range(numBeams-1):
-            self.nodeList.append([x-(i+1)*dX,y,z])
+            self.nodeList.append([startX-(i+1)*sideOnum,y,z])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[2].append(len(self.elemList)-1)  
         self.elemList.append([len(self.nodeList)-1,centroidNodeId])
@@ -676,7 +700,7 @@ class Kagome_1:
         startY = y
         for i in range(numBeams-1):
             self.nodeList.append([startX-(i+1)*dX,startY-(i+1)*dY,z])
-            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.elemList.append([centroidNodeId,len(self.nodeList)-1])
             self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x-sX, y-sY, z])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
@@ -690,7 +714,7 @@ class Kagome_1:
             self.nodeList.append([startX-(i+1)*dX,startY+(i+1)*dY,z])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[1].append(len(self.elemList)-1)
-        self.nodeList.append([x-sX, y, z])
+        self.nodeList.append([x-side, y, z])
         self.cornerNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[1].append(len(self.elemList)-1)
@@ -699,7 +723,7 @@ class Kagome_1:
         startX = x-side
         startY = y       
         for i in range(numBeams-1):
-            self.nodeList.append([x+(i+1)*dX,y,z])
+            self.nodeList.append([startX+(i+1)*sideOnum,y,z])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[2].append(len(self.elemList)-1)  
         self.elemList.append([len(self.nodeList)-1,centroidNodeId])
