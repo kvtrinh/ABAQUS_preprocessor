@@ -265,17 +265,27 @@ class ABAQUS_mesh:
                 cornerIndex = superElem.cornerNodeListId.index(i)
                 #print('local node ',i, ' is corner node')
 
-
-                
-                try:
-                    # search to see if local corner node is a global corner node
-                    connectionIndex = self.connectionNodeList.index(superElem.nodeList[i])
-                    globalIdIndex = self.connectionNodeMap[connectionIndex]
-                    # print('index for local node ',i,' is global index ', globalIdIndex)
-                    sharedNodes = sharedNodes + 1
-                except ValueError:
+                globalConnectionNodeId = searchNodeList(superElem.nodeList[i], self.connectionNodeList)
+                if globalConnectionNodeId == -1:
+                    # local corner node is not in global connection list
                     globalIdIndex = len(self.nodeList);
                     self.addConnectionNode(superElem.nodeList[i])
+                else:
+                    globalIdIndex = self.connectionNodeMap[globalConnectionNodeId]
+                    # print('index for local node ',i,' is global index ', globalIdIndex)
+                    sharedNodes = sharedNodes + 1                    
+
+
+                
+##                try:
+##                    # search to see if local corner node is a global corner node
+##                    connectionIndex = self.connectionNodeList.index(superElem.nodeList[i])
+##                    globalIdIndex = self.connectionNodeMap[connectionIndex]
+##                    # print('index for local node ',i,' is global index ', globalIdIndex)
+##                    sharedNodes = sharedNodes + 1
+##                except ValueError:
+##                    globalIdIndex = len(self.nodeList);
+##                    self.addConnectionNode(superElem.nodeList[i])
 
 
                     
@@ -981,9 +991,13 @@ class Material_Library:
         for line in lines:
             fileHandle.write(line)
         
-    
-        
-
+def searchNodeList(node, searchList):
+    # search to see if local corner node is a global corner node
+    try:
+        index = searchList.index(node)
+    except ValueError:
+        index = -1   
+    return index
         
 
 def writeLoadVector(fileName, unitLoadFileName, p1, p2, p3):
