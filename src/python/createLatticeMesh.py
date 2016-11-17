@@ -57,7 +57,7 @@ def addHemisphereShells( cx, cy, cz, rad, refinement):
         cornerNodeList.append(len(nodeList)-1)
     for i in range(refinement):
         elemList.append([0,3,2,1])
-        negZfeets.append(len(elemList) - 1)
+        posZfeets.append(len(elemList) - 1)
     # patch 2
     for i in range(refinement):
         nodeList.append([cx- rad/3., cy - rad, cz + rad/3.])
@@ -111,7 +111,7 @@ def addHemisphereShells( cx, cy, cz, rad, refinement):
         cornerNodeList.append(len(nodeList)-1)
     for i in range(refinement):
         elemList.append([5,0,12,13])
-        posZfeets.append(len(elemList) - 1)
+        negZfeets.append(len(elemList) - 1)
     # patch 9
     for i in range(refinement):
         nodeList.append([cx+rad, cy- 0.3*rad , cz -rad])
