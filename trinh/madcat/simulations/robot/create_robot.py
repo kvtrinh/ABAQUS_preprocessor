@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # set up file
     ############## file name INPUT ######
-    geomFile = open('robot_simulation_8.inp','w')
+    geomFile = open('fervor_sim_p75.inp','w')
     geomFile.write('*HEADING\n')
     geomFile.write('Robot walking model\n')
     
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     geomFile.write('*DYNAMIC\n')
     geomFile.write('1.0E-4,60.,1.0E-8,.05\n')    # full run
     geomFile.write('*DLOAD\n')
-    geomFile.write('BEAM,GRAV,99810.,0.,-1.,0.\n')
+    geomFile.write('BEAM,GRAV,386.,0.,-1.,0.\n')
     geomFile.write('*CONNECTOR MOTION, AMPLITUDE=oneHz, TYPE=DISPLACEMENT\n')
     geomFile.write('ACTUATOR1,1,.4\n')
     geomFile.write('*CONNECTOR MOTION, AMPLITUDE=oneHz, TYPE=DISPLACEMENT\n')
