@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # set up file
     ############## file name INPUT ######
-    geomFile = open('robot_simulation_7.inp','w')
+    geomFile = open('robot_simulation_8.inp','w')
     geomFile.write('*HEADING\n')
     geomFile.write('Robot walking model\n')
     
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         newElems = submesh[1]
         cornerNodes = submesh[2]
         nodeShift = len(mesh.nodeList)+1
-        elemShift = len(mesh.elemList)+1        
+        elemShift = len(mesh.elemList)        
         geomFile.write('*NODE, NSET=surface_feet_nodes\n')
         for i in range(len(newNodes)):
             mesh.addNode([newNodes[i][0],newNodes[i][1],newNodes[i][2]])
@@ -127,17 +127,16 @@ if __name__ == "__main__":
             mesh.writeElementLineLastElement(geomFile)
 
         posZfeets = submesh[3]
+        print('posZfeets')
+        print(posZfeets)
         negZfeets = submesh[4]
+        print('negZfeets')
+        print(negZfeets)        
         for elemId in posZfeets:
-            if cz <3:
-                posZfrictionElemList.append(elemId + 1 + elemShift)
-            else:
-                negZfrictionElemList.append(elemId + 1 + elemShift)          
+            posZfrictionElemList.append(elemId  + elemShift)
+        
         for elemId in negZfeets:
-            if cz <3:
-                posZfrictionElemList.append(elemId + 1 + elemShift)
-            else:
-                negZfrictionElemList.append(elemId + 1 + elemShift)             
+            negZfrictionElemList.append(elemId + elemShift)             
         
         
     geomFile.write('*SHELL SECTION, ELSET=SHELLS, MATERIAL=Aluminum_E\n')
@@ -146,8 +145,8 @@ if __name__ == "__main__":
     geomFile.write(' .2\n')
     mesh.addElset('negZfrictionElems',negZfrictionElemList)
     mesh.addElset('posZfrictionElems',posZfrictionElemList)
-    mesh.writeElset(geomFile, 'negZfrictionElems',0)
-    mesh.writeElset(geomFile, 'posZfrictionElems',0)
+    mesh.writeElset(geomFile, 'negZfrictionElems',1)
+    mesh.writeElset(geomFile, 'posZfrictionElems',1)
 
     
     # actuators and springs (springs are for visual only)
@@ -329,12 +328,7 @@ if __name__ == "__main__":
     matlLib = Material_Library()
     matlLib.writeAbaqusMatlLines('ultem_2200_polyetherimide_E', geomFile)
     matlLib.writeAbaqusMatlLines('Aluminum_E', geomFile)
-##    geomFile.write('*MATERIAL, NAME=Matl_1\n')
-##    geomFile.write('*ELASTIC\n')
-##    geomFile.write(' 3.E6,.3\n')
-##    geomFile.write('*DENSITY\n')
-##    geomFile.write(' .0005\n')
-##    geomFile.write('**\n')
+
     geomFile.write('*STEP,INC=40000,NLGEOM\n')
     geomFile.write('*DYNAMIC\n')
     geomFile.write('1.0E-4,60.,1.0E-8,.05\n')    # full run
