@@ -184,6 +184,36 @@ class ABAQUS_mesh:
         print('end addKagome1LatticeMesh')
 
 
+    def addHoneycomb1LatticeMesh(self, numX, numY, numBeamsPerStrut, cX, cY, cZ, length, inclusionBox = None, noMergeBox = None):
+        # numX and numY grows in the positive x and y direction respectively
+        numVoxels = 0
+        numSharedCorners = 0
+        noNumZ = True
+        theta = math.radians(30)
+        for i in range(numX):
+            for j in range(numY):
+                if noNumZ:
+                    x = cX + length*math.cos(theta)*(i)
+                    y = cY + (length+length*math.cos(theta))*(j)
+                    z = cZ
+                    inside = isNodeInBox([x,y,z], inclusionBox)
+                    inSide = True
+                    if inclusionBox != None:
+                        inSide = isNodeInBox([x,y,z], inclusionBox)
+                    inside = True
+                    if inSide:
+                        numVoxels = numVoxels + 1
+                        #print('adding kagome element ',numVoxels,x,y,z)
+                        honeycomb = Honeycomb_1(x, y, z, numBeamsPerStrut,length)
+                        includeCentroid = False
+                        sharedNodes = self.addSuperElement(honeycomb, includeCentroid, noMergeBox)
+                        numSharedCorners = numSharedCorners + sharedNodes
+                        #print('connection list:')
+                        #print(self.connectionNodeList)                    
+                        #print('Num shared corners: ', numSharedCorners)
+        print('end addHoneycomb1LatticeMesh')        
+
+
     def addVoxelLatticeMesh(self, numX, numY, numZ, numBeamsPerStrut, elemType, offX, offY, offZ, includeCentroid = True, inclusionBox = None):
         
         #mesh = ABAQUS_mesh()
@@ -219,7 +249,7 @@ class ABAQUS_mesh:
         for i in range(len(superElem.nodeList)):
             # Don't need to search global list if not corner node
             try:
-                cornerIndex = superElem.cornerNodeListId.index(i)
+                cornerIndex = superElem.shareableNodeListId.index(i)
                 #print('local node ',i, ' is corner node')
 
                 globalConnectionNodeId = searchNodeList(superElem.nodeList[i], self.connectionNodeList,nodeTolerance, noMergeBox)
@@ -609,10 +639,11 @@ class Kagome_1:
     """
 
     def __init__(self, x, y, z, numBeams,length, theta_degree = 60):
-        self.cornerNodeListId = []       # list of x, y, z coords
+        self.shareableNodeListId = []       # list of node Python ids
+        self.shareableElemListId = []       # list of element ids
         self.nodeList = []       # list of x, y, z coords
         self.elemList = []       # list of element input sections
-        self.beamSectionList = [[],[],[],[],[],[]]   # 12 lists for 12 struts
+        self.beamSectionList = [[],[],[],[],[],[]]   # 6 lists for 6 struts
         self.centroid = [x,y,z]
         self.pitch = length
         self.numBeamsPerStrut = numBeams
@@ -632,7 +663,7 @@ class Kagome_1:
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[0].append(len(self.elemList)-1)
         self.nodeList.append([x+sX, y+sY, 0])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[0].append(len(self.elemList)-1)
 
@@ -644,7 +675,7 @@ class Kagome_1:
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x+side, y, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[1].append(len(self.elemList)-1)
 
@@ -668,7 +699,7 @@ class Kagome_1:
             startNodeId = len(self.nodeList)-1
             self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x-sX, y-sY, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1)
         self.elemList.append([startNodeId,len(self.nodeList)-1])
         self.beamSectionList[1].append(len(self.elemList)-1)
 
@@ -680,7 +711,7 @@ class Kagome_1:
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x-side, y, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[1].append(len(self.elemList)-1)
 
@@ -694,6 +725,101 @@ class Kagome_1:
         self.elemList.append([len(self.nodeList)-1,centroidNodeId])
         self.beamSectionList[2].append(len(self.elemList)-1)
      
+class Honeycomb_1:
+    """ 
+    Class to hold Honeycomb_1.  nodeList and elem list index starts at 0 (python list index starts at 0). when writing ABAQUS, both list shift by 1 to start at 1 instead of 0
+    [x,y,z] is honeycomb centroid (not a node), numBeams is number of beams per strut, length is distance from top node to bottom node (diameter of bounding circle)
+    """
+
+    def __init__(self, x, y, z, numBeams,length):
+        self.shareableNodeListId = []       # list of x, y, z coords
+        self.shareableElemListId = []       # list of element id
+        self.nodeList = []       # list of x, y, z coords
+        self.elemList = []       # list of element input sections
+        self.beamSectionList = [[],[],[],[],[],[]]   # 6 lists for 6 struts
+        self.centroid = [x,y,z]
+        self.pitch = length
+        self.numBeamsPerStrut = numBeams
+
+        side = length/2.
+        rad_30 = math.radians(30)
+        sX = side*math.sin(rad_30)
+        sY = length
+        dX = sX/numBeams
+        dY = sY/numBeams
+        sideOnum = side/numBeams
+        centroidNodeId = 0
+        # leg 1
+        self.nodeList.append([x,y-side, z])    # centroid is not a mesh node
+        self.shareableNodeListId.append(len(self.nodeList)-1)  # all corner node are shareable
+        for i in range(numBeams-1):
+            self.nodeList.append([x+(i+1)*dX,y-sY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.shareableElemListId.append(len(self.elemList)-1)  # all elements are shareable
+            self.beamSectionList[0].append(len(self.elemList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1)  # all corner node are shareable
+
+
+        # leg 2
+        startX = x+side*math.cos(rad_30)
+        startY = y-side/2.
+        dY = side/numBeams
+        for i in range(numBeams-1):
+            self.nodeList.append([startX,startY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.shareableElemListId.append(len(self.elemList)-1)  # all elements are shareable
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
+
+
+        # leg 3
+        startX = x+side*math.cos(rad_30)
+        startY = y+side/2.
+        dX = -side*math.cos(rad_30)/numBeams
+        dY = side*math.sin(rad_30)/numBeams
+        for i in range(numBeams-1):
+            self.nodeList.append([startX+(i+1)*dX,startY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.shareableElemListId.append(len(self.elemList)-1)  # all elements are shareable
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1) 
+
+        # leg 4
+        startX = x
+        startY = y+side
+        dX = -side*math.cos(rad_30)/numBeams
+        dY = -side*math.sin(rad_30)/numBeams
+        for i in range(numBeams-1):
+            self.nodeList.append([startX+(i+1)*dX,startY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.shareableElemListId.append(len(self.elemList)-1)  # all elements are shareable
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1) 
+
+        # leg 5
+        startX = x - math.cos(rad_30)
+        startY = y+side/2.
+        dX = 0.
+        dY = -side/numBeams
+        for i in range(numBeams-1):
+            self.nodeList.append([startX+(i+1)*dX,startY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.shareableElemListId.append(len(self.elemList)-1)  # all elements are shareable
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1)
+
+        # leg 6
+        startX = x - math.cos(rad_30)
+        startY = y-side/2.
+        dX = side*math.cos(rad_30)/numBeams
+        dY = -side*math.sin(rad_30)/numBeams
+        for i in range(numBeams-1):
+            self.nodeList.append([startX+(i+1)*dX,startY+(i+1)*dY,z])
+            self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
+            self.shareableElemListId.append(len(self.elemList)-1)  # all elements are shareable
+            self.beamSectionList[1].append(len(self.elemList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1)
+     
 
 
     
@@ -704,7 +830,8 @@ class Voxel_1:
     """
 
     def __init__(self,pitch, x, y, z, numBeams):
-        self.cornerNodeListId = []       # list of x, y, z coords
+        self.shareableNodeListId = []       # list of x, y, z coords
+        self.shareableElemListId = []       # list of element id
         self.nodeList = []       # list of x, y, z coords
         self.elemList = []       # list of element input sections
         self.beamSectionList = [[],[],[],[],[],[],[],[],[],[],[],[]]   # 12 lists for 12 struts
@@ -714,13 +841,13 @@ class Voxel_1:
         d45 = po2/numBeams
         # leg 1
         self.nodeList.append([x+po2,y,z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)
+        self.shareableNodeListId.append(len(self.nodeList)-1)
         for i in range(numBeams-1):
             self.nodeList.append([x+po2-(i+1)*d45,y,z-(i+1)*d45])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[0].append(len(self.elemList)-1)
         self.nodeList.append([x, y, z-po2])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[0].append(len(self.elemList)-1)
 
@@ -730,7 +857,7 @@ class Voxel_1:
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[1].append(len(self.elemList)-1)
         self.nodeList.append([x-po2, y, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[1].append(len(self.elemList)-1)
 
@@ -740,7 +867,7 @@ class Voxel_1:
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[2].append(len(self.elemList)-1)
         self.nodeList.append([x, y, z+po2])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
         self.beamSectionList[2].append(len(self.elemList)-1)
 
@@ -749,11 +876,11 @@ class Voxel_1:
             self.nodeList.append([x+(i+1)*d45,y,z+po2-(i+1)*d45])
             self.elemList.append([len(self.nodeList)-2,len(self.nodeList)-1])
             self.beamSectionList[3].append(len(self.elemList)-1)
-        self.elemList.append([len(self.nodeList)-1,self.cornerNodeListId[0]])
+        self.elemList.append([len(self.nodeList)-1,self.shareableNodeListId[0]])
         self.beamSectionList[3].append(len(self.elemList)-1)
 
         # leg 5
-        startNode = self.cornerNodeListId[0]
+        startNode = self.shareableNodeListId[0]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -762,13 +889,13 @@ class Voxel_1:
             self.beamSectionList[4].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.nodeList.append([x, y+po2, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([startNode,len(self.nodeList)-1])
         self.beamSectionList[4].append(len(self.elemList)-1)
 
         # leg 6
-        startNode = self.cornerNodeListId[1]
-        endNode = self.cornerNodeListId[4]
+        startNode = self.shareableNodeListId[1]
+        endNode = self.shareableNodeListId[4]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -780,8 +907,8 @@ class Voxel_1:
         self.beamSectionList[5].append(len(self.elemList)-1)
 
         # leg 7
-        startNode = self.cornerNodeListId[2]
-        endNode = self.cornerNodeListId[4]
+        startNode = self.shareableNodeListId[2]
+        endNode = self.shareableNodeListId[4]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -793,8 +920,8 @@ class Voxel_1:
         self.beamSectionList[6].append(len(self.elemList)-1)
 
         # leg 8
-        startNode = self.cornerNodeListId[3]
-        endNode = self.cornerNodeListId[4]
+        startNode = self.shareableNodeListId[3]
+        endNode = self.shareableNodeListId[4]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -806,7 +933,7 @@ class Voxel_1:
         self.beamSectionList[7].append(len(self.elemList)-1)
         
         # leg 9
-        startNode = self.cornerNodeListId[0]
+        startNode = self.shareableNodeListId[0]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -815,13 +942,13 @@ class Voxel_1:
             self.beamSectionList[8].append(len(self.elemList)-1)
             startNode = len(self.nodeList)-1
         self.nodeList.append([x, y-po2, z])
-        self.cornerNodeListId.append(len(self.nodeList)-1)   
+        self.shareableNodeListId.append(len(self.nodeList)-1)   
         self.elemList.append([startNode,len(self.nodeList)-1])
         self.beamSectionList[8].append(len(self.elemList)-1)
 
         # leg 10
-        startNode = self.cornerNodeListId[1]
-        endNode = self.cornerNodeListId[5]
+        startNode = self.shareableNodeListId[1]
+        endNode = self.shareableNodeListId[5]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -833,8 +960,8 @@ class Voxel_1:
         self.beamSectionList[9].append(len(self.elemList)-1)
 
         # leg 11
-        startNode = self.cornerNodeListId[2]
-        endNode = self.cornerNodeListId[5]
+        startNode = self.shareableNodeListId[2]
+        endNode = self.shareableNodeListId[5]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -846,8 +973,8 @@ class Voxel_1:
         self.beamSectionList[10].append(len(self.elemList)-1)
 
         # leg 12
-        startNode = self.cornerNodeListId[3]
-        endNode = self.cornerNodeListId[5]
+        startNode = self.shareableNodeListId[3]
+        endNode = self.shareableNodeListId[5]
         for i in range(numBeams-1):
             if i>0:
                 startNode = len(self.nodeList)-1
@@ -860,8 +987,8 @@ class Voxel_1:
 
 
     def printVoxelData(self):
-        print('cornerNodeListId')
-        print(self.cornerNodeListId)
+        print('shareableNodeListId')
+        print(self.shareableNodeListId)
         print('nodeList length ', len(self.nodeList))
         print(self.nodeList)
         print('elemList length ', len(self.elemList))
